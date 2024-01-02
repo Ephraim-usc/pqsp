@@ -7,6 +7,62 @@
 
 #include "numpy/arrayobject.h"
 
+typedef struct {
+    PyObject_HEAD
+    /* Type-specific fields go here. */
+} LigandObject;
+
+static PyTypeObject LigandType = {
+    .ob_base = PyVarObject_HEAD_INIT(NULL, 0)
+    .tp_name = "custom.Custom",
+    .tp_doc = PyDoc_STR("Custom objects"),
+    .tp_basicsize = sizeof(CustomObject),
+    .tp_itemsize = 0,
+    .tp_flags = Py_TPFLAGS_DEFAULT,
+    .tp_new = PyType_GenericNew,
+};
+
+static PyModuleDef ligandmodule = {
+    .m_base = PyModuleDef_HEAD_INIT,
+    .m_name = "ligand",
+    .m_doc = "Example module that creates an extension type.",
+    .m_size = -1,
+};
+
+PyMODINIT_FUNC
+PyInit_custom(void)
+{
+    PyObject *m;
+    if (PyType_Ready(&LigandType) < 0)
+        return NULL;
+
+    m = PyModule_Create(&ligandmodule);
+    if (m == NULL)
+        return NULL;
+
+    Py_INCREF(&CustomType);
+    if (PyModule_AddObject(m, "Ligand", (PyObject *) &LigandType) < 0) {
+        Py_DECREF(&LigandType);
+        Py_DECREF(m);
+        return NULL;
+    }
+
+    return m;
+}
+
+
+
+
+
+
+
+
+
+
+
+
+/*
+
 typedef double DTYPE;
 typedef unsigned long ITYPE;
 
@@ -268,13 +324,4 @@ PyMODINIT_FUNC PyInit_ligand(void)
   return PyModule_Create(&ligandModule);
 }
 
-/*
-int main()
-{
-  //matrix* mat = newMatrix(10);
-  //int idx[3] = {2,5,7}; 
-  //addSquare(mat, idx, 3, 9);
-  printf("%d", fib_(10));
-  return 0;
-}
 */
