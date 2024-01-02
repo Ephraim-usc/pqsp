@@ -14,9 +14,9 @@ typedef struct {
 
 static PyTypeObject LigandType = {
     .ob_base = PyVarObject_HEAD_INIT(NULL, 0)
-    .tp_name = "custom.Custom",
-    .tp_doc = PyDoc_STR("Custom objects"),
-    .tp_basicsize = sizeof(CustomObject),
+    .tp_name = "ligand.Ligand",
+    .tp_doc = PyDoc_STR("Ligand objects"),
+    .tp_basicsize = sizeof(LigandObject),
     .tp_itemsize = 0,
     .tp_flags = Py_TPFLAGS_DEFAULT,
     .tp_new = PyType_GenericNew,
