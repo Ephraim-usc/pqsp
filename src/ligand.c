@@ -254,18 +254,18 @@ static PyMethodDef myMethods[] =
   {NULL, NULL, 0, NULL},
 };
 
-static struct PyModuleDef matrixModule =
+static struct PyModuleDef ligandModule =
 {
   PyModuleDef_HEAD_INIT,
-  "matrixModule",
-  "matrix Module",
+  "ligandModule",
+  "ligand Module",
   -1,
   myMethods
 };
 
-PyMODINIT_FUNC PyInit_matrix(void)
+PyMODINIT_FUNC PyInit_ligand(void)
 {
-  return PyModule_Create(&matrixModule);
+  return PyModule_Create(&ligandModule);
 }
 
 /*
