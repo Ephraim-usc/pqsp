@@ -4,6 +4,7 @@
 #include <stdlib.h>
 #include <math.h>
 #include <stdint.h>
+#include <stddef.h> /* for offsetof() */
 
 #include "numpy/arrayobject.h"
 
@@ -41,7 +42,7 @@ static int
 Ligand_init(LigandObject *self, PyObject *args, PyObject *kwds)
 {
     static char *kwlist[] = {"n_particles", "n_sites", NULL};
-    if (!PyArg_ParseTupleAndKeywords(args, kwds, "|ii", &self->n_particles, &self->n_sites))
+    if (!PyArg_ParseTupleAndKeywords(args, kwds, "|ii", kwlist, &self->n_particles, &self->n_sites))
         return -1;
     self->bindings = calloc(self->n_particles * self->n_sites, sizeof(int));
     return 0;
@@ -61,7 +62,8 @@ static PyTypeObject LigandType = {
     .tp_itemsize = 0,
     .tp_flags = Py_TPFLAGS_DEFAULT,
     .tp_new = Ligand_new,
-    .tp_member = Ligand_member,
+    .tp_init = (initproc) Ligand_init,
+    .tp_member = Ligand_members,
     .tp_dealloc = (destructor) Ligand_dealloc,
 };
 
