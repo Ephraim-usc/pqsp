@@ -15,4 +15,6 @@ Download and install with the command:
 
     unzip pqsp.zip
     
+    mv pqsp-main pqsp
+    
     python3 -m pip install ./pqsp
