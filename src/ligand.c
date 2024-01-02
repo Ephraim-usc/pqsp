@@ -11,13 +11,16 @@ typedef struct {
     PyObject_HEAD
     int n_particles;
     int n_sites;
+    //int *compartment;
+    //int *states;
+    int *bindings;
 } LigandObject;
 
 static void
 Ligand_dealloc(LigandObject *self)
 {
     //Py_XDECREF(self->first);
-    //Py_XDECREF(self->last);
+    free(self.bindings);
     Py_TYPE(self)->tp_free((PyObject *) self);
 }
 
@@ -27,23 +30,28 @@ Ligand_new(PyTypeObject *type, PyObject *args, PyObject *kwds)
     LigandObject *self;
     self = (LigandObject *) type->tp_alloc(type, 0);
     if (self != NULL) {
-        PyArg_ParseTuple(args, "k", &self.n_particles, &self.n_sites);
+        self.n_particles = 0;
+        self.n_sites = 0;
+        self.bindings = NULL;
     }
     return (PyObject *) self;
 }
 
 static int
-Custom_init(CustomObject *self, PyObject *args, PyObject *kwds)
+Ligand_init(LigandObject *self, PyObject *args, PyObject *kwds)
 {
-    static char *kwlist[] = {"first", "last", "number", NULL};
-    PyObject *first = NULL, *last = NULL, *tmp;
-
-    if (!PyArg_ParseTupleAndKeywords(args, kwds, "|OOi", kwlist, &first, &last, &self->number))
+    static char *kwlist[] = {"n_particles", "n_sites", NULL};
+    if (!PyArg_ParseTupleAndKeywords(args, kwds, "|ii", &self.n_particles, &self.n_sites))
         return -1;
-
-    ;
+    self->bindings = calloc(self.n_particles * self.n_sites, sizeof(int));
     return 0;
 }
+
+static PyMemberDef Ligand_members[] = {
+    {"n_particles", Py_T_INT, offsetof(LigandObject, first), Py_READONLY, "first name"},
+    {"n_sites", Py_T_INT, offsetof(LigandObject, last), Py_READONLY, "last name"},
+    {NULL}  /* Sentinel */
+};
 
 static PyTypeObject LigandType = {
     .ob_base = PyVarObject_HEAD_INIT(NULL, 0)
@@ -53,6 +61,7 @@ static PyTypeObject LigandType = {
     .tp_itemsize = 0,
     .tp_flags = Py_TPFLAGS_DEFAULT,
     .tp_new = Ligand_new,
+    .tp_member = Ligand_member,
     .tp_dealloc = (destructor) Ligand_dealloc,
 };
 
