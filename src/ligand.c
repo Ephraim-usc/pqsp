@@ -30,7 +30,7 @@ static PyModuleDef ligandmodule = {
 };
 
 PyMODINIT_FUNC
-PyInit_custom(void)
+PyInit_ligand(void)
 {
     PyObject *m;
     if (PyType_Ready(&LigandType) < 0)
@@ -40,7 +40,7 @@ PyInit_custom(void)
     if (m == NULL)
         return NULL;
 
-    Py_INCREF(&CustomType);
+    Py_INCREF(&LigandType);
     if (PyModule_AddObject(m, "Ligand", (PyObject *) &LigandType) < 0) {
         Py_DECREF(&LigandType);
         Py_DECREF(m);
