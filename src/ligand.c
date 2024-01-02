@@ -47,8 +47,8 @@ Ligand_init(LigandObject *self, PyObject *args, PyObject *kwds)
 }
 
 static PyMemberDef Ligand_members[] = {
-    {"n_particles", Py_T_INT, offsetof(LigandObject, n_particles), Py_READONLY, "first name"},
-    {"n_sites", Py_T_INT, offsetof(LigandObject, n_sites), Py_READONLY, "last name"},
+    {"n_particles", T_INT, offsetof(LigandObject, n_particles), READONLY, "first name"},
+    {"n_sites", T_INT, offsetof(LigandObject, n_sites), READONLY, "last name"},
     {NULL}  /* Sentinel */
 };
 
