@@ -9,8 +9,41 @@
 
 typedef struct {
     PyObject_HEAD
-    /* Type-specific fields go here. */
+    int n_particles;
+    int n_sites;
 } LigandObject;
+
+static void
+Ligand_dealloc(LigandObject *self)
+{
+    //Py_XDECREF(self->first);
+    //Py_XDECREF(self->last);
+    Py_TYPE(self)->tp_free((PyObject *) self);
+}
+
+static PyObject *
+Ligand_new(PyTypeObject *type, PyObject *args, PyObject *kwds)
+{
+    LigandObject *self;
+    self = (LigandObject *) type->tp_alloc(type, 0);
+    if (self != NULL) {
+        PyArg_ParseTuple(args, "k", &self.n_particles, &self.n_sites);
+    }
+    return (PyObject *) self;
+}
+
+static int
+Custom_init(CustomObject *self, PyObject *args, PyObject *kwds)
+{
+    static char *kwlist[] = {"first", "last", "number", NULL};
+    PyObject *first = NULL, *last = NULL, *tmp;
+
+    if (!PyArg_ParseTupleAndKeywords(args, kwds, "|OOi", kwlist, &first, &last, &self->number))
+        return -1;
+
+    ;
+    return 0;
+}
 
 static PyTypeObject LigandType = {
     .ob_base = PyVarObject_HEAD_INIT(NULL, 0)
@@ -19,7 +52,8 @@ static PyTypeObject LigandType = {
     .tp_basicsize = sizeof(LigandObject),
     .tp_itemsize = 0,
     .tp_flags = Py_TPFLAGS_DEFAULT,
-    .tp_new = PyType_GenericNew,
+    .tp_new = Ligand_new,
+    .tp_dealloc = (destructor) Ligand_dealloc,
 };
 
 static PyModuleDef ligandmodule = {
