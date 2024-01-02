@@ -11,9 +11,9 @@ Download and install with the command:
 
     rm -r -f pqsp
     
-    wget https://github.com/Ephraim-usc/pqsp/archive/main.zip -O pqsp.zip
+    wget https://github.com/Ephraim-usc/pqsp/archive/main.zip -O pqsp-main.zip
 
-    unzip pqsp.zip
+    unzip pqsp-main.zip
     
     mv pqsp-main pqsp
     
