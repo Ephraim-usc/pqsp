@@ -20,7 +20,7 @@ static void
 Ligand_dealloc(LigandObject *self)
 {
     //Py_XDECREF(self->first);
-    free(self.bindings);
+    free(self->bindings);
     Py_TYPE(self)->tp_free((PyObject *) self);
 }
 
@@ -30,9 +30,9 @@ Ligand_new(PyTypeObject *type, PyObject *args, PyObject *kwds)
     LigandObject *self;
     self = (LigandObject *) type->tp_alloc(type, 0);
     if (self != NULL) {
-        self.n_particles = 0;
-        self.n_sites = 0;
-        self.bindings = NULL;
+        self->n_particles = 0;
+        self->n_sites = 0;
+        self->bindings = NULL;
     }
     return (PyObject *) self;
 }
@@ -41,9 +41,9 @@ static int
 Ligand_init(LigandObject *self, PyObject *args, PyObject *kwds)
 {
     static char *kwlist[] = {"n_particles", "n_sites", NULL};
-    if (!PyArg_ParseTupleAndKeywords(args, kwds, "|ii", &self.n_particles, &self.n_sites))
+    if (!PyArg_ParseTupleAndKeywords(args, kwds, "|ii", &self->n_particles, &self->n_sites))
         return -1;
-    self->bindings = calloc(self.n_particles * self.n_sites, sizeof(int));
+    self->bindings = calloc(self->n_particles * self->n_sites, sizeof(int));
     return 0;
 }
 
