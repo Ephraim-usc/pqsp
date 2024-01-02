@@ -9,7 +9,7 @@
 
 typedef struct {
     PyObject_HEAD
-    int n_particles;
+    long n_particles;
     int n_sites;
     //int *compartment;
     //int *states;
@@ -19,7 +19,6 @@ typedef struct {
 static void
 Ligand_dealloc(LigandObject *self)
 {
-    //Py_XDECREF(self->first);
     free(self->bindings);
     Py_TYPE(self)->tp_free((PyObject *) self);
 }
@@ -41,7 +40,7 @@ static int
 Ligand_init(LigandObject *self, PyObject *args, PyObject *kwds)
 {
     static char *kwlist[] = {"n_particles", "n_sites", NULL};
-    if (!PyArg_ParseTupleAndKeywords(args, kwds, "|ii", kwlist, &self->n_particles, &self->n_sites))
+    if (!PyArg_ParseTupleAndKeywords(args, kwds, "|li", kwlist, &self->n_particles, &self->n_sites))
         return -1;
     self->bindings = calloc(self->n_particles * self->n_sites, sizeof(int));
     return 0;
