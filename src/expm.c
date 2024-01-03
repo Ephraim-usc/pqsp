@@ -6,7 +6,7 @@
 # include <time.h>
 # include <string.h>
 
-# include "matrix_exponential.h"
+# include "expm.h"
 # include "r8lib.h"
 
 
