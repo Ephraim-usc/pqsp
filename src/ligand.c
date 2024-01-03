@@ -17,8 +17,8 @@ typedef struct {
     PyObject_HEAD
     int n;
     int *targets;
-    double **Q;
-    double **P;
+    double *Q;
+    double *P;
 } TransitionObject;
 
 static void
@@ -26,9 +26,7 @@ Transition_dealloc(TransitionObject *self)
 {
     int i;
     free(self->targets);
-    for (i = 0; i < self->n; i++) free(self->Q[i]);
     free(self->Q);
-    for (i = 0; i < self->n; i++) free(self->P[i]);
     free(self->P);
     Py_TYPE(self)->tp_free((PyObject *) self);
 }
@@ -48,36 +46,53 @@ Transition_new(PyTypeObject *type, PyObject *args, PyObject *kwds)
 }
 
 static int
-Ligand_init(TransitioObject *self, PyObject *args, PyObject *kwds)
+Transition_init(TransitionObject *self, PyObject *args, PyObject *kwds)
 {
+    PyObject * targetsObj;
     static char *kwlist[] = {"targets", NULL};
-    if (!PyArg_ParseTupleAndKeywords(args, kwds, "|li", kwlist, &self->n_particles, &self->n_sites))
+    if (!PyArg_ParseTupleAndKeywords(args, kwds, "|O!", kwlist, &PyList_Type, &targetsObj))
         return -1;
-    self->bindings = calloc(self->n_particles * self->n_sites, sizeof(int));
+    
+    self->n = PyList_Size(targetsObj);
+    for (i = 0; i < self->n; i++) strObj = PyFloat_AsDouble(PyList_GetItem(listObj, i));
+    self->P = calloc(self->n, sizeof(*double));
+    self->Q = r8mat_expm1(self->n, self->P);
     return 0;
 }
 
-static PyMemberDef Ligand_members[] = {
-    {"n_particles", T_INT, offsetof(LigandObject, n_particles), READONLY, "first name"},
-    {"n_sites", T_INT, offsetof(LigandObject, n_sites), READONLY, "last name"},
+static PyMemberDef Transition_members[] = {
+    {"n", T_INT, offsetof(TransitionObject, n), READONLY, "number of states"},
     {NULL}  /* Sentinel */
 };
 
-static PyTypeObject LigandType = {
-    .ob_base = PyVarObject_HEAD_INIT(NULL, 0)
-    .tp_name = "ligand.Ligand",
-    .tp_doc = PyDoc_STR("Ligand objects"),
-    .tp_basicsize = sizeof(LigandObject),
-    .tp_itemsize = 0,
-    .tp_flags = Py_TPFLAGS_DEFAULT,
-    .tp_new = Ligand_new,
-    .tp_init = (initproc) Ligand_init,
-    .tp_members = Ligand_members,
-    .tp_dealloc = (destructor) Ligand_dealloc,
+static PyObject *
+Transition_print(CustomObject *self, PyObject *Py_UNUSED(ignored))
+{
+    for (i = 0; i < self->n; i++) printf("%d ", self->targets[i]); printf("\n");
+    for (i = 0; i < self->n * self->n; i++) printf("%d ", self->P[i]); printf("\n");
+    for (i = 0; i < self->n * self->n; i++) printf("%d ", self->Q[i]); printf("\n");
+    
+    Py_RETURN_NONE;
+}
+
+static PyMethodDef Transition_methods[] = {
+    {"print", (PyCFunction) Transition_print, METH_NOARGS, "print the transition matrix"},
+    {NULL}  /* Sentinel */
 };
 
-
-
+static PyTypeObject TransitionType = {
+    .ob_base = PyVarObject_HEAD_INIT(NULL, 0)
+    .tp_name = "ligand.Transition",
+    .tp_doc = PyDoc_STR("Transition objects"),
+    .tp_basicsize = sizeof(TransitionObject),
+    .tp_itemsize = 0,
+    .tp_flags = Py_TPFLAGS_DEFAULT,
+    .tp_new = Transition_new,
+    .tp_init = (initproc) Transition_init,
+    .tp_members = Transition_members,
+    .tp_methods = Transition_methods,
+    .tp_dealloc = (destructor) Transition_dealloc,
+};
 
 
 
@@ -125,8 +140,8 @@ Ligand_init(LigandObject *self, PyObject *args, PyObject *kwds)
 }
 
 static PyMemberDef Ligand_members[] = {
-    {"n_particles", T_INT, offsetof(LigandObject, n_particles), READONLY, "first name"},
-    {"n_sites", T_INT, offsetof(LigandObject, n_sites), READONLY, "last name"},
+    {"n_particles", T_INT, offsetof(LigandObject, n_particles), READONLY, "number of particles"},
+    {"n_sites", T_INT, offsetof(LigandObject, n_sites), READONLY, "number of binding sites"},
     {NULL}  /* Sentinel */
 };
 
@@ -159,6 +174,8 @@ PyMODINIT_FUNC
 PyInit_ligand(void)
 {
     PyObject *m;
+    if (PyType_Ready(&TransitionType) < 0)
+        return NULL;
     if (PyType_Ready(&LigandType) < 0)
         return NULL;
 
