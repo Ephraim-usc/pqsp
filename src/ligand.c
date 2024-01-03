@@ -57,7 +57,7 @@ Transition_init(TransitionObject *self, PyObject *args, PyObject *kwds)
     
     self->n = PyList_Size(targetsObj);
     for (i = 0; i < self->n; i++)
-      self->targets[i] = (int) PyInt_AsLong(PyList_GetItem(targetsObj, i));
+      self->targets[i] = (int) PyLong_AsLong(PyList_GetItem(targetsObj, i));
     self->P = calloc(self->n, sizeof(double));
     self->Q = r8mat_expm1(self->n, self->P);
     return 0;
