@@ -192,7 +192,14 @@ PyInit_ligand(void)
     m = PyModule_Create(&ligandmodule);
     if (m == NULL)
         return NULL;
-
+    
+    Py_INCREF(&TransitionType);
+    if (PyModule_AddObject(m, "Transition", (PyObject *) &TransitionType) < 0) {
+        Py_DECREF(&TransitionType);
+        Py_DECREF(m);
+        return NULL;
+    }
+    
     Py_INCREF(&LigandType);
     if (PyModule_AddObject(m, "Ligand", (PyObject *) &LigandType) < 0) {
         Py_DECREF(&LigandType);
