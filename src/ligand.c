@@ -55,11 +55,12 @@ Transition_init(TransitionObject *self, PyObject *args, PyObject *kwds)
     if (!PyArg_ParseTupleAndKeywords(args, kwds, "|O!", kwlist, &PyList_Type, &targetsObj))
         return -1;
     
-    self->n = PyList_Size(targetsObj);
+    self->n = (int) PyList_Size(targetsObj);
+    self->targets = calloc(self->n, sizeof(int));
     for (i = 0; i < self->n; i++)
       self->targets[i] = (int) PyLong_AsLong(PyList_GetItem(targetsObj, i));
-    //self->P = calloc(self->n, sizeof(double));
-    //self->Q = r8mat_expm1(self->n, self->P);
+    self->P = calloc(self->n, sizeof(double));
+    self->Q = r8mat_expm1(self->n, self->P);
     return 0;
 }
 
