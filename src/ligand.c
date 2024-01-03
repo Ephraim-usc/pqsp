@@ -8,6 +8,83 @@
 #include <math.h>
 #include <stdint.h>
 
+
+/******************************************************************************
+                                the Ligand type
+******************************************************************************/
+
+typedef struct {
+    PyObject_HEAD
+    int n;
+    int *targets;
+    double **Q;
+    double **P;
+} TransitionObject;
+
+static void
+Transition_dealloc(TransitionObject *self)
+{
+    int i;
+    free(self->targets);
+    for (i = 0; i < self->n; i++) free(self->Q[i]);
+    free(self->Q);
+    for (i = 0; i < self->n; i++) free(self->P[i]);
+    free(self->P);
+    Py_TYPE(self)->tp_free((PyObject *) self);
+}
+
+static PyObject *
+Transition_new(PyTypeObject *type, PyObject *args, PyObject *kwds)
+{
+    TransitioObject *self;
+    self = (TransitioObject *) type->tp_alloc(type, 0);
+    if (self != NULL) {
+        self->n = 0;
+        self->targets = NULL;
+        self->P = NULL;
+        self->Q = NULL;
+    }
+    return (PyObject *) self;
+}
+
+static int
+Ligand_init(TransitioObject *self, PyObject *args, PyObject *kwds)
+{
+    static char *kwlist[] = {"targets", NULL};
+    if (!PyArg_ParseTupleAndKeywords(args, kwds, "|li", kwlist, &self->n_particles, &self->n_sites))
+        return -1;
+    self->bindings = calloc(self->n_particles * self->n_sites, sizeof(int));
+    return 0;
+}
+
+static PyMemberDef Ligand_members[] = {
+    {"n_particles", T_INT, offsetof(LigandObject, n_particles), READONLY, "first name"},
+    {"n_sites", T_INT, offsetof(LigandObject, n_sites), READONLY, "last name"},
+    {NULL}  /* Sentinel */
+};
+
+static PyTypeObject LigandType = {
+    .ob_base = PyVarObject_HEAD_INIT(NULL, 0)
+    .tp_name = "ligand.Ligand",
+    .tp_doc = PyDoc_STR("Ligand objects"),
+    .tp_basicsize = sizeof(LigandObject),
+    .tp_itemsize = 0,
+    .tp_flags = Py_TPFLAGS_DEFAULT,
+    .tp_new = Ligand_new,
+    .tp_init = (initproc) Ligand_init,
+    .tp_members = Ligand_members,
+    .tp_dealloc = (destructor) Ligand_dealloc,
+};
+
+
+
+
+
+
+/******************************************************************************
+                                the Ligand type
+******************************************************************************/
+
 typedef struct {
     PyObject_HEAD
     long n_particles;
@@ -65,6 +142,11 @@ static PyTypeObject LigandType = {
     .tp_members = Ligand_members,
     .tp_dealloc = (destructor) Ligand_dealloc,
 };
+
+
+/******************************************************************************
+                                the module
+******************************************************************************/
 
 static PyModuleDef ligandmodule = {
     .m_base = PyModuleDef_HEAD_INIT,
