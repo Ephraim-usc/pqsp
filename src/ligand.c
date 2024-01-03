@@ -58,8 +58,8 @@ Transition_init(TransitionObject *self, PyObject *args, PyObject *kwds)
     self->n = PyList_Size(targetsObj);
     for (i = 0; i < self->n; i++)
       self->targets[i] = (int) PyLong_AsLong(PyList_GetItem(targetsObj, i));
-    self->P = calloc(self->n, sizeof(double));
-    self->Q = r8mat_expm1(self->n, self->P);
+    //self->P = calloc(self->n, sizeof(double));
+    //self->Q = r8mat_expm1(self->n, self->P);
     return 0;
 }
 
@@ -75,12 +75,18 @@ Transition_print(TransitionObject *self, PyObject *Py_UNUSED(ignored))
     for (i = 0; i < self->n; i++) 
         printf("%d ", self->targets[i]);
     printf("\n");
+
+    if (self->P != NULL){
     for (i = 0; i < self->n * self->n; i++)
         printf("%f ", self->P[i]);
     printf("\n");
+    }
+
+    if (self->Q != NULL){
     for (i = 0; i < self->n * self->n; i++)
         printf("%f ", self->Q[i]);
     printf("\n");
+    }
     
     Py_RETURN_NONE;
 }
