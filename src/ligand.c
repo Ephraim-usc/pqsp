@@ -10,7 +10,7 @@
 
 
 /******************************************************************************
-                                the Ligand type
+                                the Transition type
 ******************************************************************************/
 
 typedef struct {
@@ -24,7 +24,6 @@ typedef struct {
 static void
 Transition_dealloc(TransitionObject *self)
 {
-    int i;
     free(self->targets);
     free(self->Q);
     free(self->P);
@@ -34,9 +33,10 @@ Transition_dealloc(TransitionObject *self)
 static PyObject *
 Transition_new(PyTypeObject *type, PyObject *args, PyObject *kwds)
 {
-    TransitioObject *self;
-    self = (TransitioObject *) type->tp_alloc(type, 0);
-    if (self != NULL) {
+    TransitionObject *self;
+    self = (TransitionObject *) type->tp_alloc(type, 0);
+    if (self != NULL)
+    {
         self->n = 0;
         self->targets = NULL;
         self->P = NULL;
@@ -49,12 +49,14 @@ static int
 Transition_init(TransitionObject *self, PyObject *args, PyObject *kwds)
 {
     PyObject * targetsObj;
+    int i;
+    
     static char *kwlist[] = {"targets", NULL};
     if (!PyArg_ParseTupleAndKeywords(args, kwds, "|O!", kwlist, &PyList_Type, &targetsObj))
         return -1;
     
     self->n = PyList_Size(targetsObj);
-    for (i = 0; i < self->n; i++) strObj = PyFloat_AsDouble(PyList_GetItem(listObj, i));
+    for (i = 0; i < self->n; i++) self->targets[i] = PyFloat_AsDouble(PyList_GetItem(targetsObj, i));
     self->P = calloc(self->n, sizeof(*double));
     self->Q = r8mat_expm1(self->n, self->P);
     return 0;
@@ -66,7 +68,7 @@ static PyMemberDef Transition_members[] = {
 };
 
 static PyObject *
-Transition_print(CustomObject *self, PyObject *Py_UNUSED(ignored))
+Transition_print(TransitionObject *self, PyObject *Py_UNUSED(ignored))
 {
     for (i = 0; i < self->n; i++) printf("%d ", self->targets[i]); printf("\n");
     for (i = 0; i < self->n * self->n; i++) printf("%d ", self->P[i]); printf("\n");
