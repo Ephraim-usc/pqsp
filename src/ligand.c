@@ -39,8 +39,8 @@ Transition_new(PyTypeObject *type, PyObject *args, PyObject *kwds)
     {
         self->n = 0;
         self->targets = NULL;
-        self->P = NULL;
         self->Q = NULL;
+        self->P = NULL;
     }
     return (PyObject *) self;
 }
@@ -48,19 +48,25 @@ Transition_new(PyTypeObject *type, PyObject *args, PyObject *kwds)
 static int
 Transition_init(TransitionObject *self, PyObject *args, PyObject *kwds)
 {
-    PyObject * targetsObj;
+    PyObject *targetsObj, *onsObj, *offsObj;
     int i;
     
     static char *kwlist[] = {"targets", NULL};
-    if (!PyArg_ParseTupleAndKeywords(args, kwds, "|O!", kwlist, &PyList_Type, &targetsObj))
+    if (!PyArg_ParseTupleAndKeywords(args, kwds, "|O!O!O!", kwlist, &PyList_Type, &targetsObj, &PyList_Type, &onsObj, &PyList_Type, &offsObj))
         return -1;
     
-    self->n = (int) PyList_Size(targetsObj);
+    self->n = (int) PyList_Size(targetsObj) + 1;
     self->targets = calloc(self->n, sizeof(int));
     for (i = 0; i < self->n; i++)
       self->targets[i] = (int) PyLong_AsLong(PyList_GetItem(targetsObj, i));
-    self->P = calloc(self->n, sizeof(double));
-    self->Q = r8mat_expm1(self->n, self->P);
+    
+    self->Q = calloc(self->n * self->n, sizeof(double));
+    for (i = 1; i < self->n; i++)
+      self->Q[i] = (int) PyFloat_AsDouble(PyList_GetItem(onsObj, i - 1));
+    for (i = 1; i < self->n; i++)
+      self->Q[self->n * i] = (int) PyFloat_AsDouble(PyList_GetItem(offsObj, i - 1));
+    
+    self->P = r8mat_expm1(self->n, self->Q);
     return 0;
 }
 
