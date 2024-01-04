@@ -144,7 +144,7 @@ Site_add_state(SiteObject *self, PyObject *args, PyObject *kwds)
 
 static PyMethodDef Site_methods[] = {
     {"print", (PyCFunction) Site_print, METH_NOARGS, "print the Site"},
-    {"add_state", (PyCFunction) Site_add_state, METH_KEYWORDS, "add a state to the Site"},
+    {"add_state", (PyCFunction) Site_add_state, METH_VARARGS | METH_KEYWORDS, "add a state to the Site"},
     {NULL}  /* Sentinel */
 };
 
