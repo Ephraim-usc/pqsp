@@ -172,8 +172,8 @@ Site_compute_Ps(SiteObject *self, PyObject *args, PyObject *kwds)
             }
             for (i = 0; i < self->n; i++)
             {
-                Q[(self->n + 1) * (i + 1)] = - self->offs[i] * t;
-                Q[(self->n + 2) * (i + 1)] = self->offs[i] * t;
+                Q[(self->n + 1) * (i + 1)] = self->offs[i] * t;
+                Q[(self->n + 2) * (i + 1)] = - self->offs[i] * t;
             }
             /* printf("[state %d] ", state);
             for (i = 0; i < (self->n + 1) * (self->n + 1); i++)
