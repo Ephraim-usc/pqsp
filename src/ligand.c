@@ -174,7 +174,11 @@ Site_compute_Ps(SiteObject *self, PyObject *args, PyObject *kwds)
                 Q[0] -= self->onses[state][i];
                 Q[i + 1] = self->onses[state][i];
             }
-            self->Ps[state] = r8mat_expm1(self->n + 1, Q);
+            printf("[state %d] ", state);
+            for (i = 0; i < (self->n + 1) * (self->n + 1); i++)
+                printf("%f ", Q[i]);
+            printf("\n");
+            //self->Ps[state] = r8mat_expm1(self->n + 1, Q);
         }
     
     Py_RETURN_NONE;
