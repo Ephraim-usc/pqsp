@@ -184,7 +184,7 @@ Site_compute_Ps(SiteObject *self, PyObject *args, PyObject *kwds)
 static PyMethodDef Site_methods[] = {
     {"print", (PyCFunction) Site_print, METH_NOARGS, "print the Site"},
     {"add_state", (PyCFunction) Site_add_state, METH_VARARGS | METH_KEYWORDS, "add a state to the Site"},
-    {"compute_Ps", (PyCFunction) Site_compute_Ps, METH_NOARGS, "compute P matrices"},
+    {"compute_Ps", (PyCFunction) Site_compute_Ps,  METH_VARARGS | METH_KEYWORDS, "compute P matrices"},
     {NULL}  /* Sentinel */
 };
 
