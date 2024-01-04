@@ -59,13 +59,14 @@ Site_init(SiteObject *self, PyObject *args, PyObject *kwds)
     static char *kwlist[] = {"targets", NULL};
     if (!PyArg_ParseTupleAndKeywords(args, kwds, "|O!O!O!", kwlist, &PyList_Type, &targetsObj, &PyList_Type, &onsObj, &PyList_Type, &offsObj))
         return -1;
-    
+
+    /*
     self->n = (int) PyList_Size(targetsObj) + 1;
     self->targets = calloc(self->n, sizeof(int));
     for (i = 0; i < self->n; i++)
       self->targets[i] = (int) PyLong_AsLong(PyList_GetItem(targetsObj, i - 1));
     
-    /*self->Qs = calloc(self->__max_states__, sizeof(double *));
+    self->Qs = calloc(self->__max_states__, sizeof(double *));
     self->Qs[0] = calloc(self->n * self->n, sizeof(double));
     for (i = 1; i < self->n; i++)
       self->Qs[0][i] = (int) PyFloat_AsDouble(PyList_GetItem(onsObj, i - 1));
