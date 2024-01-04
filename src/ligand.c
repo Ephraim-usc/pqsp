@@ -63,15 +63,20 @@ Site_init(SiteObject *self, PyObject *args, PyObject *kwds)
     self->n = (int) PyList_Size(targetsObj) + 1;
     self->targets = calloc(self->n, sizeof(int));
     for (i = 0; i < self->n - 1; i++)
-      self->targets[i] = (int) PyLong_AsLong(PyList_GetItem(targetsObj, i));
+        self->targets[i] = (int) PyLong_AsLong(PyList_GetItem(targetsObj, i));
     
     self->Qs = calloc(self->__max_states__, sizeof(double *));
     self->Qs[0] = calloc(self->n * self->n, sizeof(double));
     for (i = 1; i < self->n; i++)
-      self->Qs[0][i] = (int) PyFloat_AsDouble(PyList_GetItem(onsObj, i - 1));
+    {
+        self->Qs[0][i] = (double) PyFloat_AsDouble(PyList_GetItem(onsObj, i - 1));
+        self->Qs[0][0] -= (double) PyFloat_AsDouble(PyList_GetItem(onsObj, i - 1));
+    }
     for (i = 1; i < self->n; i++)
-      self->Qs[0][self->n * i] = (int) PyFloat_AsDouble(PyList_GetItem(offsObj, i - 1));
-    
+    {
+        self->Qs[0][self->n * i] = (double) PyFloat_AsDouble(PyList_GetItem(offsObj, i - 1));
+        self->Qs[0][self->n * i + i] -= (double) PyFloat_AsDouble(PyList_GetItem(offsObj, i - 1));
+    }
     self->Ps = calloc(self->__max_states__, sizeof(double *));
     self->Ps[0] = r8mat_expm1(self->n, self->Qs[0]);
     return 0;
@@ -86,7 +91,7 @@ static PyObject *
 Site_print(SiteObject *self, PyObject *Py_UNUSED(ignored))
 {
     int i;
-    for (i = 0; i < self->n; i++)
+    for (i = 0; i < self->n - 1; i++)
         printf("%d ", self->targets[i]);
     printf("\n");
 
@@ -105,8 +110,31 @@ Site_print(SiteObject *self, PyObject *Py_UNUSED(ignored))
     Py_RETURN_NONE;
 }
 
+static PyObject *
+Site_add_state(SiteObject *self, PyObject *args, PyObject *kwds)
+{
+    PyObject *targetsObj, *onsObj, *offsObj;
+    int state;
+    
+    static char *kwlist[] = {"state", "ons", NULL};
+    if (!PyArg_ParseTupleAndKeywords(args, kwds, "|iO!", kwlist, &state, &PyList_Type, &onsObj))
+        return -1;
+    
+    self->Qs[state] = calloc(self->n * self->n, sizeof(double));
+    for (i = 1; i < self->n; i++)
+    {
+        self->Qs[state][i] = (double) PyFloat_AsDouble(PyList_GetItem(onsObj, i - 1));
+        self->Qs[state][0] -= (double) PyFloat_AsDouble(PyList_GetItem(onsObj, i - 1));
+    }
+    
+    self->Ps[state] = r8mat_expm1(self->n, self->Qs[state]);
+    
+    Py_RETURN_NONE;
+}
+
 static PyMethodDef Site_methods[] = {
-    {"print", (PyCFunction) Site_print, METH_NOARGS, "print the Site matrix"},
+    {"print", (PyCFunction) Site_print, METH_NOARGS, "print the Site"},
+    {"add_state", (PyCFunction) Site_add_state, METH_KEYWORDS, "add a state to the Site"},
     {NULL}  /* Sentinel */
 };
 
