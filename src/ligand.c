@@ -151,19 +151,15 @@ Site_compute_Ps(SiteObject *self, PyObject *args, PyObject *kwds)
 {
     PyObject *xsObj;
     int state, i;
-    double t;
-    double *Q;
+    double t; double *xs;
+    double *Q = calloc((self->n + 1) * (self->n + 1), sizeof(double));
     
     static char *kwlist[] = {"t", "xs", NULL};
     if (!PyArg_ParseTupleAndKeywords(args, kwds, "|dO!", kwlist, &t, &PyList_Type, &xsObj))
         Py_RETURN_NONE;
     
-    Q = calloc((self->n + 1) * (self->n + 1), sizeof(double));
     for (i = 0; i < self->n; i++)
-    {
-        Q[(self->n + 1) * (i + 1)] = - self->offs[i];
-        Q[(self->n + 2) * (i + 1)] = self->offs[i];
-    }
+        xs[i] = (double) PyFloat_AsDouble(PyList_GetItem(xsObj, i));
     
     for (state = 0; state < self->__max_states__; state++)
         if (self->onses[state] != NULL)
@@ -171,14 +167,19 @@ Site_compute_Ps(SiteObject *self, PyObject *args, PyObject *kwds)
             Q[0] = 0.0;
             for (i = 0; i < self->n; i++)
             {
-                Q[0] -= self->onses[state][i];
-                Q[i + 1] = self->onses[state][i];
+                Q[0] -= self->onses[state][i] * xs[i] * t;
+                Q[i + 1] = self->onses[state][i] * xs[i] * t;
             }
-            printf("[state %d] ", state);
+            for (i = 0; i < self->n; i++)
+            {
+                Q[(self->n + 1) * (i + 1)] = - self->offs[i] * t;
+                Q[(self->n + 2) * (i + 1)] = self->offs[i] * t;
+            }
+            /* printf("[state %d] ", state);
             for (i = 0; i < (self->n + 1) * (self->n + 1); i++)
                 printf("%f ", Q[i]);
-            printf("\n");
-            //self->Ps[state] = r8mat_expm1(self->n + 1, Q);
+            printf("\n"); */
+            self->Ps[state] = r8mat_expm1(self->n + 1, Q);
         }
     
     Py_RETURN_NONE;
