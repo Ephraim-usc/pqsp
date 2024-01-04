@@ -123,12 +123,12 @@ Site_print(SiteObject *self, PyObject *Py_UNUSED(ignored))
 static PyObject *
 Site_add_state(SiteObject *self, PyObject *args, PyObject *kwds)
 {
-    PyObject *targetsObj, *onsObj, *offsObj;
-    int state;
+    PyObject *onsObj;
+    int state, i;
     
     static char *kwlist[] = {"state", "ons", NULL};
     if (!PyArg_ParseTupleAndKeywords(args, kwds, "|iO!", kwlist, &state, &PyList_Type, &onsObj))
-        return -1;
+        Py_RETURN_NONE;
     
     self->Qs[state] = calloc(self->n * self->n, sizeof(double));
     for (i = 1; i < self->n; i++)
