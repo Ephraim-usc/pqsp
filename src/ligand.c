@@ -62,10 +62,10 @@ Site_init(SiteObject *self, PyObject *args, PyObject *kwds)
     
     self->n = (int) PyList_Size(targetsObj) + 1;
     self->targets = calloc(self->n, sizeof(int));
-    for (i = 0; i < self->n; i++)
-      self->targets[i] = (int) PyLong_AsLong(PyList_GetItem(targetsObj, i - 1));
+    for (i = 0; i < self->n - 1; i++)
+      self->targets[i] = (int) PyLong_AsLong(PyList_GetItem(targetsObj, i));
     
-    /*self->Qs = calloc(self->__max_states__, sizeof(double *));
+    self->Qs = calloc(self->__max_states__, sizeof(double *));
     self->Qs[0] = calloc(self->n * self->n, sizeof(double));
     for (i = 1; i < self->n; i++)
       self->Qs[0][i] = (int) PyFloat_AsDouble(PyList_GetItem(onsObj, i - 1));
@@ -73,7 +73,7 @@ Site_init(SiteObject *self, PyObject *args, PyObject *kwds)
       self->Qs[0][self->n * i] = (int) PyFloat_AsDouble(PyList_GetItem(offsObj, i - 1));
     
     self->Ps = calloc(self->__max_states__, sizeof(double *));
-    self->Ps[0] = r8mat_expm1(self->n, self->Qs[0]);*/
+    self->Ps[0] = r8mat_expm1(self->n, self->Qs[0]);
     return 0;
 }
 
