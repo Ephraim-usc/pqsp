@@ -90,22 +90,32 @@ static PyMemberDef Site_members[] = {
 static PyObject *
 Site_print(SiteObject *self, PyObject *Py_UNUSED(ignored))
 {
-    int i;
+    int state, i;
+    
+    printf("targets:\n");
     for (i = 0; i < self->n - 1; i++)
         printf("%d ", self->targets[i]);
-    printf("\n");
-
-    if (self->Qs[0] != NULL){
-    for (i = 0; i < self->n * self->n; i++)
-        printf("%f ", self->Qs[0][i]);
-    printf("\n");
-    }
+    printf("\n\n");
     
-    if (self->Ps[0] != NULL){
-    for (i = 0; i < self->n * self->n; i++)
-        printf("%f ", self->Ps[0][i]);
+    printf("Qs:\n");
+    for (state = 0; state < self->__max_states__; state++)
+        if (self->Qs[state] != NULL)
+        {
+            printf("[state %d] ", state);
+            for (i = 0; i < self->n * self->n; i++)
+                printf("%f ", self->Qs[state][i]);
+        }
     printf("\n");
-    }
+    
+    printf("Ps:\n");
+    for (state = 0; state < self->__max_states__; state++)
+        if (self->Ps[state] != NULL)
+        {
+            printf("[state %d] ", state);
+            for (i = 0; i < self->n * self->n; i++)
+                printf("%f ", self->Ps[state][i]);
+        }
+    printf("\n");
     
     Py_RETURN_NONE;
 }
