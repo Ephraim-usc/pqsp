@@ -10,43 +10,48 @@
 
 
 /******************************************************************************
-                                the Transition type
+                                the Site type
 ******************************************************************************/
 
 typedef struct {
     PyObject_HEAD
     int n;
+    int __max_states__;
     int *targets;
-    double *Q;
-    double *P;
-} TransitionObject;
+    double **Qs;
+    double **Ps;
+} SiteObject;
 
 static void
-Transition_dealloc(TransitionObject *self)
+Site_dealloc(SiteObject *self)
 {
+    int i;
     free(self->targets);
-    free(self->Q);
-    free(self->P);
+    for (i = 0; i < self->__max_states__; i++) if (self->Qs[i]) free(self->Qs[i]);
+    free(self->Qs);
+    for (i = 0; i < self->__max_states__; i++) if (self->Ps[i]) free(self->Ps[i]);
+    free(self->Ps);
     Py_TYPE(self)->tp_free((PyObject *) self);
 }
 
 static PyObject *
-Transition_new(PyTypeObject *type, PyObject *args, PyObject *kwds)
+Site_new(PyTypeObject *type, PyObject *args, PyObject *kwds)
 {
-    TransitionObject *self;
-    self = (TransitionObject *) type->tp_alloc(type, 0);
+    SiteObject *self;
+    self = (SiteObject *) type->tp_alloc(type, 0);
     if (self != NULL)
     {
         self->n = 0;
+        self->__max_states__ = 1024;
         self->targets = NULL;
-        self->Q = NULL;
-        self->P = NULL;
+        self->Qs = NULL;
+        self->Ps = NULL;
     }
     return (PyObject *) self;
 }
 
 static int
-Transition_init(TransitionObject *self, PyObject *args, PyObject *kwds)
+Site_init(SiteObject *self, PyObject *args, PyObject *kwds)
 {
     PyObject *targetsObj, *onsObj, *offsObj;
     int i;
@@ -60,61 +65,63 @@ Transition_init(TransitionObject *self, PyObject *args, PyObject *kwds)
     for (i = 0; i < self->n; i++)
       self->targets[i] = (int) PyLong_AsLong(PyList_GetItem(targetsObj, i));
     
-    self->Q = calloc(self->n * self->n, sizeof(double));
+    self->Qs = calloc(self->__max_states__, sizeof(double *));
+    self->Qs[0] = calloc(self->n * self->n, sizeof(double));
     for (i = 1; i < self->n; i++)
-      self->Q[i] = (int) PyFloat_AsDouble(PyList_GetItem(onsObj, i - 1));
+      self->Qs[0][i] = (int) PyFloat_AsDouble(PyList_GetItem(onsObj, i - 1));
     for (i = 1; i < self->n; i++)
-      self->Q[self->n * i] = (int) PyFloat_AsDouble(PyList_GetItem(offsObj, i - 1));
+      self->Qs[0][self->n * i] = (int) PyFloat_AsDouble(PyList_GetItem(offsObj, i - 1));
     
-    self->P = r8mat_expm1(self->n, self->Q);
+    self->Ps = calloc(self->__max_states__, sizeof(double *));
+    self->Ps[0] = r8mat_expm1(self->n, self->Qs[0]);
     return 0;
 }
 
-static PyMemberDef Transition_members[] = {
-    {"n", T_INT, offsetof(TransitionObject, n), READONLY, "number of states"},
+static PyMemberDef Site_members[] = {
+    {"n", T_INT, offsetof(SiteObject, n), READONLY, "number of states"},
     {NULL}  /* Sentinel */
 };
 
 static PyObject *
-Transition_print(TransitionObject *self, PyObject *Py_UNUSED(ignored))
+Site_print(SiteObject *self, PyObject *Py_UNUSED(ignored))
 {
     int i;
-    for (i = 0; i < self->n; i++) 
+    for (i = 0; i < self->n; i++)
         printf("%d ", self->targets[i]);
     printf("\n");
-
-    if (self->P != NULL){
+    
+    if (self->Ps[0] != NULL){
     for (i = 0; i < self->n * self->n; i++)
-        printf("%f ", self->P[i]);
+        printf("%f ", self->Ps[0][i]);
     printf("\n");
     }
-
-    if (self->Q != NULL){
+    
+    if (self->Qs[0] != NULL){
     for (i = 0; i < self->n * self->n; i++)
-        printf("%f ", self->Q[i]);
+        printf("%f ", self->Qs[0][i]);
     printf("\n");
     }
     
     Py_RETURN_NONE;
 }
 
-static PyMethodDef Transition_methods[] = {
-    {"print", (PyCFunction) Transition_print, METH_NOARGS, "print the transition matrix"},
+static PyMethodDef Site_methods[] = {
+    {"print", (PyCFunction) Site_print, METH_NOARGS, "print the Site matrix"},
     {NULL}  /* Sentinel */
 };
 
-static PyTypeObject TransitionType = {
+static PyTypeObject SiteType = {
     .ob_base = PyVarObject_HEAD_INIT(NULL, 0)
-    .tp_name = "ligand.Transition",
-    .tp_doc = PyDoc_STR("Transition objects"),
-    .tp_basicsize = sizeof(TransitionObject),
+    .tp_name = "ligand.Site",
+    .tp_doc = PyDoc_STR("Site objects"),
+    .tp_basicsize = sizeof(SiteObject),
     .tp_itemsize = 0,
     .tp_flags = Py_TPFLAGS_DEFAULT,
-    .tp_new = Transition_new,
-    .tp_init = (initproc) Transition_init,
-    .tp_members = Transition_members,
-    .tp_methods = Transition_methods,
-    .tp_dealloc = (destructor) Transition_dealloc,
+    .tp_new = Site_new,
+    .tp_init = (initproc) Site_init,
+    .tp_members = Site_members,
+    .tp_methods = Site_methods,
+    .tp_dealloc = (destructor) Site_dealloc,
 };
 
 
@@ -197,7 +204,7 @@ PyMODINIT_FUNC
 PyInit_ligand(void)
 {
     PyObject *m;
-    if (PyType_Ready(&TransitionType) < 0)
+    if (PyType_Ready(&SiteType) < 0)
         return NULL;
     if (PyType_Ready(&LigandType) < 0)
         return NULL;
@@ -206,9 +213,9 @@ PyInit_ligand(void)
     if (m == NULL)
         return NULL;
     
-    Py_INCREF(&TransitionType);
-    if (PyModule_AddObject(m, "Transition", (PyObject *) &TransitionType) < 0) {
-        Py_DECREF(&TransitionType);
+    Py_INCREF(&SiteType);
+    if (PyModule_AddObject(m, "Site", (PyObject *) &SiteType) < 0) {
+        Py_DECREF(&SiteType);
         Py_DECREF(m);
         return NULL;
     }
