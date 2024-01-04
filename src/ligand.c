@@ -145,29 +145,41 @@ Site_add_state(SiteObject *self, PyObject *args, PyObject *kwds)
     Py_RETURN_NONE;
 }
 
-/*
+
 static PyObject *
 Site_compute_Ps(SiteObject *self, PyObject *args, PyObject *kwds)
 {
-    PyObject *onsObj;
+    PyObject *xsObj;
     int state, i;
+    double t;
+    double *Q;
     
     static char *kwlist[] = {"t", "xs", NULL};
-    if (!PyArg_ParseTupleAndKeywords(args, kwds, "|iO!", kwlist, &state, &PyList_Type, &onsObj))
+    if (!PyArg_ParseTupleAndKeywords(args, kwds, "|dO!", kwlist, &t, &PyList_Type, &xsObj))
         Py_RETURN_NONE;
     
-    self->Qs[state] = calloc(self->n * self->n, sizeof(double));
-    for (i = 1; i < self->n; i++)
+    Q = calloc((self->n + 1) * (self->n + 1), sizeof(double));
+    for (i = 0; i < self->n; i++)
     {
-        self->Qs[state][i] = (double) PyFloat_AsDouble(PyList_GetItem(onsObj, i - 1));
-        self->Qs[state][0] -= (double) PyFloat_AsDouble(PyList_GetItem(onsObj, i - 1));
+        Q[(self->n + 1) * (i + 1)] = - self->offs[i];
+        Q[(self->n + 2) * (i + 1)] = self->offs[i];
     }
     
-    //self->Ps[state] = r8mat_expm1(self->n, self->Qs[state]);
+    for (state = 0; state < self->__max_states__; state++)
+        if (self->onses[state] != NULL)
+        {
+            Q[0] = 0.0;
+            for (i = 0; i < self->n; i++)
+            {
+                Q[0] -= self->onses[state][i];
+                Q[i + 1] = self->onses[state][i];
+            }
+            self->Ps[state] = r8mat_expm1(self->n + 1, Q);
+        }
     
     Py_RETURN_NONE;
 }
-*/
+
 
 static PyMethodDef Site_methods[] = {
     {"print", (PyCFunction) Site_print, METH_NOARGS, "print the Site"},
