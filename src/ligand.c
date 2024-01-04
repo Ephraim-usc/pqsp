@@ -151,7 +151,8 @@ Site_compute_Ps(SiteObject *self, PyObject *args, PyObject *kwds)
 {
     PyObject *xsObj;
     int state, i;
-    double t; double *xs;
+    double t;
+    double *xs = calloc(self->n, sizeof(double));
     double *Q = calloc((self->n + 1) * (self->n + 1), sizeof(double));
     
     static char *kwlist[] = {"t", "xs", NULL};
