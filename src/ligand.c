@@ -78,6 +78,7 @@ Site_init(SiteObject *self, PyObject *args, PyObject *kwds)
     for (i = 0; i < self->n; i++)
         self->offs[i] = (double) PyFloat_AsDouble(PyList_GetItem(offsObj, i));
     
+    self->Ps = calloc(self->__max_states__, sizeof(double *));
     //self->Ps[0] = r8mat_expm1(self->n, self->Qs[0]);
     return 0;
 }
