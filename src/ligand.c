@@ -89,16 +89,16 @@ Site_print(SiteObject *self, PyObject *Py_UNUSED(ignored))
     for (i = 0; i < self->n; i++)
         printf("%d ", self->targets[i]);
     printf("\n");
+
+    if (self->Qs[0] != NULL){
+    for (i = 0; i < self->n * self->n; i++)
+        printf("%f ", self->Qs[0][i]);
+    printf("\n");
+    }
     
     if (self->Ps[0] != NULL){
     for (i = 0; i < self->n * self->n; i++)
         printf("%f ", self->Ps[0][i]);
-    printf("\n");
-    }
-    
-    if (self->Qs[0] != NULL){
-    for (i = 0; i < self->n * self->n; i++)
-        printf("%f ", self->Qs[0][i]);
     printf("\n");
     }
     
