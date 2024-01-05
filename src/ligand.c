@@ -350,6 +350,221 @@ static PyTypeObject LigandType = {
 
 
 /******************************************************************************
+                                the System type
+******************************************************************************/
+
+typedef struct {
+    PyObject_HEAD
+
+    /* fixed attributes */
+    int n_compartments; // number of compartments
+    int n_analytes; // number of analytes
+    int 
+
+    /* variable attributes */
+    double **xses; // list of lists of analyte concentrations, for each compartment
+    double **boundses; // list of lists of bound analytes, for each ligand, for each compartment
+    
+} SiteObject;
+
+static void
+Site_dealloc(SiteObject *self)
+{
+    int i;
+    free(self->targets);
+    free(self->offs);
+    for (i = 0; i < self->__max_states__; i++) if (self->onses[i]) free(self->onses[i]);
+    free(self->onses);
+    for (i = 0; i < self->__max_states__; i++) if (self->Ps[i]) free(self->Ps[i]);
+    free(self->Ps);
+    Py_TYPE(self)->tp_free((PyObject *) self);
+}
+
+static PyObject *
+Site_new(PyTypeObject *type, PyObject *args, PyObject *kwds)
+{
+    SiteObject *self;
+    self = (SiteObject *) type->tp_alloc(type, 0);
+    if (self != NULL)
+    {
+        self->n = 0;
+        self->__max_states__ = 1024;
+        self->targets = NULL;
+        self->offs = NULL;
+        self->onses = NULL;
+        self->Ps = NULL;
+    }
+    return (PyObject *) self;
+}
+
+static int
+Site_init(SiteObject *self, PyObject *args, PyObject *kwds)
+{
+    PyObject *targetsObj, *onsObj, *offsObj;
+    int i;
+    
+    static char *kwlist[] = {"targets", "ons", "offs", NULL};
+    if (!PyArg_ParseTupleAndKeywords(args, kwds, "|O!O!O!", kwlist, &PyList_Type, &targetsObj, &PyList_Type, &onsObj, &PyList_Type, &offsObj))
+        return -1;
+    
+    self->n = (int) PyList_Size(targetsObj);
+    
+    self->targets = calloc(self->n, sizeof(int));
+    for (i = 0; i < self->n; i++)
+        self->targets[i] = (int) PyLong_AsLong(PyList_GetItem(targetsObj, i));
+
+    self->onses = calloc(self->__max_states__, sizeof(double *));
+    self->onses[0] = calloc(self->n, sizeof(double));
+    for (i = 0; i < self->n; i++)
+        self->onses[0][i] = (double) PyFloat_AsDouble(PyList_GetItem(onsObj, i));
+    
+    self->offs = calloc(self->n, sizeof(double));
+    for (i = 0; i < self->n; i++)
+        self->offs[i] = (double) PyFloat_AsDouble(PyList_GetItem(offsObj, i));
+    
+    self->Ps = calloc(self->__max_states__, sizeof(double *));
+    //self->Ps[0] = r8mat_expm1(self->n, self->Qs[0]);
+    return 0;
+}
+
+static PyMemberDef Site_members[] = {
+    {"n", T_INT, offsetof(SiteObject, n), READONLY, "number of states"},
+    {NULL}  /* Sentinel */
+};
+
+static PyObject *
+Site_print(SiteObject *self, PyObject *Py_UNUSED(ignored))
+{
+    int state, i;
+    
+    printf("targets:\n");
+    for (i = 0; i < self->n; i++)
+        printf("%d ", self->targets[i]);
+    printf("\n\n");
+    
+    printf("off rates:\n");
+    for (i = 0; i < self->n; i++)
+        printf("%f ", self->offs[i]);
+    printf("\n\n");
+    
+    printf("on rates:\n");
+    for (state = 0; state < self->__max_states__; state++)
+        if (self->onses[state] != NULL)
+        {
+            printf("[state %d] ", state);
+            for (i = 0; i < self->n; i++)
+                printf("%f ", self->onses[state][i]);
+            printf("\n");
+        }
+    printf("\n");
+    
+    printf("Ps:\n");
+    for (state = 0; state < self->__max_states__; state++)
+        if (self->Ps[state] != NULL)
+        {
+            printf("[state %d] ", state);
+            for (i = 0; i < (self->n + 1) * (self->n + 1); i++)
+                printf("%f ", self->Ps[state][i]);
+            printf("\n");
+        }
+    printf("\n");
+    
+    Py_RETURN_NONE;
+}
+
+static PyObject *
+Site_add_state(SiteObject *self, PyObject *args, PyObject *kwds)
+{
+    PyObject *onsObj;
+    int state, i;
+    
+    static char *kwlist[] = {"state", "ons", NULL};
+    if (!PyArg_ParseTupleAndKeywords(args, kwds, "|iO!", kwlist, &state, &PyList_Type, &onsObj))
+        Py_RETURN_NONE;
+    
+    if (!self->onses[state]) // if already added, then replace
+      self->onses[state] = calloc(self->n, sizeof(double));
+    for (i = 0; i < self->n; i++)
+        self->onses[state][i] = (double) PyFloat_AsDouble(PyList_GetItem(onsObj, i));
+    
+    Py_RETURN_NONE;
+}
+
+
+static PyObject *
+Site_compute_Ps(SiteObject *self, PyObject *args, PyObject *kwds)
+{
+    PyObject *xsObj;
+    int state, i;
+    double t;
+    double *xs = calloc(self->n, sizeof(double));
+    double *Q = calloc((self->n + 1) * (self->n + 1), sizeof(double));
+    
+    static char *kwlist[] = {"t", "xs", NULL};
+    if (!PyArg_ParseTupleAndKeywords(args, kwds, "|dO!", kwlist, &t, &PyList_Type, &xsObj))
+        Py_RETURN_NONE;
+    
+    for (i = 0; i < self->n; i++)
+        xs[i] = (double) PyFloat_AsDouble(PyList_GetItem(xsObj, i));
+    
+    for (state = 0; state < self->__max_states__; state++)
+        if (self->onses[state] != NULL)
+        {
+            Q[0] = 0.0;
+            for (i = 0; i < self->n; i++)
+            {
+                Q[0] -= self->onses[state][i] * xs[i] * t;
+                Q[i + 1] = self->onses[state][i] * xs[i] * t;
+            }
+            for (i = 0; i < self->n; i++)
+            {
+                Q[(self->n + 1) * (i + 1)] = self->offs[i] * t;
+                Q[(self->n + 2) * (i + 1)] = - self->offs[i] * t;
+            }
+            /* printf("[state %d] ", state);
+            for (i = 0; i < (self->n + 1) * (self->n + 1); i++)
+                printf("%f ", Q[i]);
+            printf("\n"); */
+            self->Ps[state] = r8mat_expm1(self->n + 1, Q);
+        }
+    
+    Py_RETURN_NONE;
+}
+
+// mpp: mole per particle
+// bounds: list of bound targets for each particle
+// xs: list of concentrations for each target
+// xs_: list of updated concentrations for each target
+static int
+Site_bind(SiteObject *self, int n_particles, double mpp, double *bounds, double *xs, double *xs_) 
+{
+    ;
+    return 0;
+}
+
+static PyMethodDef Site_methods[] = {
+    {"print", (PyCFunction) Site_print, METH_NOARGS, "print the Site"},
+    {"add_state", (PyCFunction) Site_add_state, METH_VARARGS | METH_KEYWORDS, "add a state to the Site"},
+    {"compute_Ps", (PyCFunction) Site_compute_Ps,  METH_VARARGS | METH_KEYWORDS, "compute P matrices"},
+    {NULL}  /* Sentinel */
+};
+
+static PyTypeObject SiteType = {
+    .ob_base = PyVarObject_HEAD_INIT(NULL, 0)
+    .tp_name = "ligand.Site",
+    .tp_doc = PyDoc_STR("Site objects"),
+    .tp_basicsize = sizeof(SiteObject),
+    .tp_itemsize = 0,
+    .tp_flags = Py_TPFLAGS_DEFAULT,
+    .tp_new = Site_new,
+    .tp_init = (initproc) Site_init,
+    .tp_members = Site_members,
+    .tp_methods = Site_methods,
+    .tp_dealloc = (destructor) Site_dealloc,
+};
+
+
+/******************************************************************************
                                 the module
 ******************************************************************************/
 
