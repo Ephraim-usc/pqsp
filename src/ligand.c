@@ -275,7 +275,7 @@ Ligand_init(LigandObject *self, PyObject *args, PyObject *kwds)
     self->n_sites = (int) PyList_Size(sitesObj);
     self->sites = calloc(self->n_sites, sizeof(SiteObject *));
     for(s = 0; s < self->n_sites; s++)
-      self->sites[s] = (SiteObject *) PyList_GetItem(sitesObj, i);
+      self->sites[s] = (SiteObject *) PyList_GetItem(sitesObj, s);
     self->states = calloc(self->n_particles, sizeof(int));
     self->boundses = calloc(self->n_sites, sizeof(int *));
     for(s = 0; s < self->n_sites; s++)
@@ -290,7 +290,7 @@ static PyMemberDef Ligand_members[] = {
 };
 
 static PyObject *
-Custom_getsites(CustomObject *self, void *closure)
+Ligand_getsites(CustomObject *self, void *closure)
 {
     int i;  
     PyObject *sitesObj = PyList_New(self->n_sites);
