@@ -297,7 +297,7 @@ Ligand_getsites(LigandObject *self, void *closure)
     int s;
     PyObject *sitesObj = PyList_New(self->n_sites);
     for (s = 0; s < self->n_sites; s++)
-        PyList_SetItem(sitesObj, s, self->sites[s]);
+        PyList_SetItem(sitesObj, s, (PyObject *) self->sites[s]);
     return Py_NewRef(sitesObj);
 }
 
@@ -307,7 +307,7 @@ Ligand_getstates(LigandObject *self, void *closure)
     int i;
     PyObject *statesObj = PyList_New(self->n_particles);
     for (i = 0; i < self->n_particles; i++)
-        PyList_SetItem(statesObj, i, self->states[i]);
+        PyList_SetItem(statesObj, i, (PyObject *) Py_BuildValue("i", self->states[i]));
     return Py_NewRef(statesObj);
 }
 
@@ -321,8 +321,8 @@ Ligand_getboundses(LigandObject *self, void *closure)
     {
         boundsObj = PyList_New(self->n_particles);
         for (i = 0; i < self->n_particles; i++)
-            PyList_SetItem(boundsObj, i, Py_BuildValue("i", self->boundses[s][i]));
-        PyList_SetItem(boundsesObj, s, boundsObj);
+            PyList_SetItem(boundsObj, i, (PyObject *) Py_BuildValue("i", self->boundses[s][i]));
+        PyList_SetItem(boundsesObj, s, (PyObject *) boundsObj);
     }
     return Py_NewRef(boundsesObj);
 }
@@ -330,7 +330,7 @@ Ligand_getboundses(LigandObject *self, void *closure)
 static PyGetSetDef Ligand_getsetters[] = {
     {"sites", (getter) Ligand_getsites, NULL, "binding sites", NULL},
     {"states", (getter) Ligand_getstates, NULL, "states of each particle", NULL},
-    {"boundses", (getter) Ligand_getsboundses, NULL, "bound targets on each site for each particle", NULL},
+    {"boundses", (getter) Ligand_getboundses, NULL, "bound targets on each site for each particle", NULL},
     {NULL}  /* Sentinel */
 };
 
