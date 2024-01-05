@@ -252,9 +252,12 @@ Ligand_new(PyTypeObject *type, PyObject *args, PyObject *kwds)
     LigandObject *self;
     self = (LigandObject *) type->tp_alloc(type, 0);
     if (self != NULL) {
-        self->n_particles = 0;
         self->n_sites = 0;
-        self->bindings = NULL;
+        self->sites = NULL;
+        self->n_particles = 0;
+        self->mpp = 0.0;
+        self->states = NULL;
+        self->boundses = NULL;
     }
     return (PyObject *) self;
 }
@@ -262,16 +265,45 @@ Ligand_new(PyTypeObject *type, PyObject *args, PyObject *kwds)
 static int
 Ligand_init(LigandObject *self, PyObject *args, PyObject *kwds)
 {
-    static char *kwlist[] = {"n_particles", "n_sites", NULL};
-    if (!PyArg_ParseTupleAndKeywords(args, kwds, "|li", kwlist, &self->n_particles, &self->n_sites))
+    PyObject *sitesObj;
+    int s;
+    
+    static char *kwlist[] = {"sites", "n_particles", "mpp", NULL};
+    if (!PyArg_ParseTupleAndKeywords(args, kwds, "|O!ld", kwlist, &PyList_Type, &sitesObj, &self->n_particles, &self->mpp))
         return -1;
-    self->bindings = calloc(self->n_particles * self->n_sites, sizeof(int));
+    
+    self->n_sites = (int) PyList_Size(sitesObj);
+    self->sites = calloc(self->n_sites, sizeof(SiteObject *));
+    for(s = 0; s < self->n_sites; s++)
+      self->sites[s] = (SiteObject *) PyList_GetItem(sitesObj, i);
+    self->states = calloc(self->n_particles, sizeof(int));
+    self->boundses = calloc(self->n_sites, sizeof(int *));
+    for(s = 0; s < self->n_sites; s++)
+      self->boundses[s] = calloc(self->n_particles, sizeof(int));
     return 0;
 }
 
 static PyMemberDef Ligand_members[] = {
     {"n_particles", T_INT, offsetof(LigandObject, n_particles), READONLY, "number of particles"},
     {"n_sites", T_INT, offsetof(LigandObject, n_sites), READONLY, "number of binding sites"},
+    {NULL}  /* Sentinel */
+};
+
+static PyObject *
+Custom_getsites(CustomObject *self, void *closure)
+{
+    int i;  
+    PyObject *sitesObj = PyList_New(self->n_sites);
+    if (sitesObj)
+    {
+      for (i = 0; i < self->n_sites; i++)
+        PyList_SetItem(sitesObj, i, self->sites[i]);
+    }
+    return Py_NewRef(sitesObj);
+}
+
+static PyGetSetDef Ligand_getsetters[] = {
+    {"sites", (getter) Ligand_getsites, NULL, "binding sites", NULL},
     {NULL}  /* Sentinel */
 };
 
@@ -286,6 +318,7 @@ static PyTypeObject LigandType = {
     .tp_init = (initproc) Ligand_init,
     .tp_members = Ligand_members,
     .tp_dealloc = (destructor) Ligand_dealloc,
+    .tp_getset = Ligand_getsetters,
 };
 
 
