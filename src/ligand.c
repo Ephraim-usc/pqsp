@@ -290,9 +290,9 @@ static PyMemberDef Ligand_members[] = {
 };
 
 static PyObject *
-Ligand_getsites(CustomObject *self, void *closure)
+Ligand_getsites(LigandObject *self, void *closure)
 {
-    int i;  
+    int i;
     PyObject *sitesObj = PyList_New(self->n_sites);
     if (sitesObj)
     {
