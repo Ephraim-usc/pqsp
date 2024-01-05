@@ -186,6 +186,16 @@ Site_compute_Ps(SiteObject *self, PyObject *args, PyObject *kwds)
     Py_RETURN_NONE;
 }
 
+// mpp: mole per particle
+// bounds: list of bound targets for each particle
+// xs: list of concentrations for each target
+// xs_: list of updated concentrations for each target
+static int
+Site_bind(SiteObject *self, int n_particles, double mpp, double *bounds, double *xs, double *xs_) 
+{
+    ;
+    return 0;
+}
 
 static PyMethodDef Site_methods[] = {
     {"print", (PyCFunction) Site_print, METH_NOARGS, "print the Site"},
@@ -216,17 +226,23 @@ static PyTypeObject SiteType = {
 
 typedef struct {
     PyObject_HEAD
-    long n_particles;
+    SiteObject **sites;
     int n_sites;
-    //int *compartment;
-    //int *states;
-    int *bindings;
+    long n_particles;
+    double mpp; // mole per particle
+    int *states; // list of states for each particle
+    int **boundses; // list of lists of bound targets for each binding site
 } LigandObject;
 
 static void
 Ligand_dealloc(LigandObject *self)
 {
-    free(self->bindings);
+    int s;
+    for (s = 0; s < self->n_sites; s++)
+      Py_XDECREF(self->sites[s]);
+      free(self->boundses[s]);
+    free(self->states);
+    free(self->boundses);
     Py_TYPE(self)->tp_free((PyObject *) self);
 }
 
