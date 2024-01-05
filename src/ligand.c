@@ -285,26 +285,52 @@ Ligand_init(LigandObject *self, PyObject *args, PyObject *kwds)
 }
 
 static PyMemberDef Ligand_members[] = {
-    {"n_particles", T_INT, offsetof(LigandObject, n_particles), READONLY, "number of particles"},
     {"n_sites", T_INT, offsetof(LigandObject, n_sites), READONLY, "number of binding sites"},
+    {"n_particles", T_INT, offsetof(LigandObject, n_particles), READONLY, "number of particles"},
+    {"mpp", T_INT, offsetof(LigandObject, mpp), READONLY, "mole per particle"},
     {NULL}  /* Sentinel */
 };
 
 static PyObject *
 Ligand_getsites(LigandObject *self, void *closure)
 {
-    int i;
+    int s;
     PyObject *sitesObj = PyList_New(self->n_sites);
-    if (sitesObj)
-    {
-      for (i = 0; i < self->n_sites; i++)
-        PyList_SetItem(sitesObj, i, self->sites[i]);
-    }
+    for (s = 0; s < self->n_sites; s++)
+        PyList_SetItem(sitesObj, s, self->sites[s]);
     return Py_NewRef(sitesObj);
+}
+
+static PyObject *
+Ligand_getstates(LigandObject *self, void *closure)
+{
+    int i;
+    PyObject *statesObj = PyList_New(self->n_particles);
+    for (i = 0; i < self->n_particles; i++)
+        PyList_SetItem(statesObj, i, self->states[i]);
+    return Py_NewRef(statesObj);
+}
+
+static PyObject *
+Ligand_getboundses(LigandObject *self, void *closure)
+{
+    int s, i;
+    PyObject *boundsesObj = PyList_New(self->n_sites);
+    PyObject *boundsObj;
+    for (s = 0; s < self->n_sites; s++)
+    {
+        boundsObj = PyList_New(self->n_particles);
+        for (i = 0; i < self->n_particles; i++)
+            PyList_SetItem(boundsObj, i, Py_BuildValue("i", self->boundses[s][i]));
+        PyList_SetItem(boundsesObj, s, boundsObj);
+    }
+    return Py_NewRef(boundsesObj);
 }
 
 static PyGetSetDef Ligand_getsetters[] = {
     {"sites", (getter) Ligand_getsites, NULL, "binding sites", NULL},
+    {"states", (getter) Ligand_getstates, NULL, "states of each particle", NULL},
+    {"boundses", (getter) Ligand_getsboundses, NULL, "bound targets on each site for each particle", NULL},
     {NULL}  /* Sentinel */
 };
 
