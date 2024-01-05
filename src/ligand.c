@@ -138,7 +138,8 @@ Site_add_state(SiteObject *self, PyObject *args, PyObject *kwds)
     if (!PyArg_ParseTupleAndKeywords(args, kwds, "|iO!", kwlist, &state, &PyList_Type, &onsObj))
         Py_RETURN_NONE;
     
-    self->onses[state] = calloc(self->n, sizeof(double));
+    if (!self->onses[state]) // if already added, then replace
+      self->onses[state] = calloc(self->n, sizeof(double));
     for (i = 0; i < self->n; i++)
         self->onses[state][i] = (double) PyFloat_AsDouble(PyList_GetItem(onsObj, i));
     
