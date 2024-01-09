@@ -429,7 +429,7 @@ System_getxses(SystemObject *self, void *closure)
     {
         xsObj = PyList_New(self->n_analytes);
         for (a = 0; a < self->n_analytes; a++)
-            PyList_SetItem(xsObj, a, (PyObject *) Py_BuildValue("i", self->xses[c][a]));
+            PyList_SetItem(xsObj, a, (PyObject *) Py_BuildValue("d", self->xses[c][a]));
         PyList_SetItem(xsesObj, c, (PyObject *) xsObj);
     }
     return Py_NewRef(xsesObj);
@@ -483,6 +483,7 @@ System_add_ligand(SystemObject *self, PyObject *args, PyObject *kwds)
 
 static PyMethodDef System_methods[] = {
     {"add_x", (PyCFunction) System_add_x, METH_VARARGS | METH_KEYWORDS, "add analyte"},
+    {"add_ligand", (PyCFunction) System_add_ligand, METH_VARARGS | METH_KEYWORDS, "add ligand"},
     {NULL}  /* Sentinel */
 };
 
