@@ -472,7 +472,7 @@ System_add_ligand(SystemObject *self, PyObject *args, PyObject *kwds)
     PyObject *ligandObj;
     
     static char *kwlist[] = {"ligand", NULL};
-    if (!PyArg_ParseTupleAndKeywords(args, kwds, "|O!", kwlist, &PyList_Type, &ligandObj))
+    if (!PyArg_ParseTupleAndKeywords(args, kwds, "|O!", kwlist, &LigandType, &ligandObj))
         Py_RETURN_NONE;
     
     self->ligands[self->n_ligands] = (LigandObject *) ligandObj;
