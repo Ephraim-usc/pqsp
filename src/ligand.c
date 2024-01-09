@@ -372,7 +372,7 @@ System_dealloc(SystemObject *self)
 {
     int c;
     free(self->ligands);
-    for (c = 0; c < self->n_compartments; c++) free(self->xses[i]);
+    for (c = 0; c < self->n_compartments; c++) free(self->xses[c]);
     Py_TYPE(self)->tp_free((PyObject *) self);
 }
 
@@ -396,7 +396,6 @@ System_new(PyTypeObject *type, PyObject *args, PyObject *kwds)
 static int
 System_init(SystemObject *self, PyObject *args, PyObject *kwds)
 {
-    PyObject *ligandsObj;
     int c, l;
     
     static char *kwlist[] = {"n_compartments", "n_analytes", NULL};
@@ -429,7 +428,7 @@ System_getxses(SystemObject *self, void *closure)
     for (c = 0; c < self->n_compartments; c++)
     {
         xsObj = PyList_New(self->n_analytes);
-        for (a = 0; a < self->n_particles; a++)
+        for (a = 0; a < self->n_analytes; a++)
             PyList_SetItem(xsObj, a, (PyObject *) Py_BuildValue("i", self->xses[c][a]));
         PyList_SetItem(xsesObj, c, (PyObject *) xsObj);
     }
@@ -522,6 +521,8 @@ PyInit_ligand(void)
         return NULL;
     if (PyType_Ready(&LigandType) < 0)
         return NULL;
+    if (PyType_Ready(&SystemType) < 0)
+        return NULL;
 
     m = PyModule_Create(&ligandmodule);
     if (m == NULL)
@@ -537,6 +538,13 @@ PyInit_ligand(void)
     Py_INCREF(&LigandType);
     if (PyModule_AddObject(m, "Ligand", (PyObject *) &LigandType) < 0) {
         Py_DECREF(&LigandType);
+        Py_DECREF(m);
+        return NULL;
+    }
+
+    Py_INCREF(&SystemType);
+    if (PyModule_AddObject(m, "System", (PyObject *) &SystemType) < 0) {
+        Py_DECREF(&SystemType);
         Py_DECREF(m);
         return NULL;
     }
