@@ -359,11 +359,12 @@ typedef struct {
     /* fixed attributes */
     int n_compartments; // number of compartments
     int n_analytes; // number of analytes
-    int n_ligands;
-    LigandObject **ligands;
+    int __max_ligands__;
     
     /* variable attributes */
     double **xses; // list of lists of analyte concentrations, for each compartment
+    int n_ligands;
+    LigandObject **ligands;
 } SystemObject;
 
 static void
@@ -384,9 +385,10 @@ System_new(PyTypeObject *type, PyObject *args, PyObject *kwds)
     {
         self->n_compartments = 0;
         self->n_analytes = 0;
+        self->xses = NULL;
+        self->__max_ligands__ = 1024;
         self->n_ligands = 0;
         self->ligands = NULL;
-        self->xses = NULL;
     }
     return (PyObject *) self;
 }
@@ -397,20 +399,16 @@ System_init(SystemObject *self, PyObject *args, PyObject *kwds)
     PyObject *ligandsObj;
     int c, l;
     
-    static char *kwlist[] = {"n_compartments", "n_analytes", "ligands", NULL};
-    if (!PyArg_ParseTupleAndKeywords(args, kwds, "|iiO!", kwlist, &self->n_compartments, &self->n_analytes, &PyList_Type, &ligandsObj))
+    static char *kwlist[] = {"n_compartments", "n_analytes", NULL};
+    if (!PyArg_ParseTupleAndKeywords(args, kwds, "|iiO!", kwlist, &self->n_compartments, &self->n_analytes))
         return -1;
-    
-    self->n_ligands = (int) PyList_Size(ligandsObj);
-    
-    self->ligands = calloc(self->n_ligands, sizeof(LigandObject *));
-    for (l = 0; l < self->n_ligands; l++)
-        self->ligands[l] = (LigandObject *) PyList_GetItem(ligandsObj, l);
     
     self->xses = calloc(self->n_compartments, sizeof(double *));
     for (c = 0; c < self->n_compartments; c++)
         self->xses[c] = calloc(self->n_analytes, sizeof(double *));
-    
+
+    self->n_ligands = 0;
+    self->ligands = calloc(self->__max_ligands__, sizeof(LigandObject *));
     return 0;
 }
 
@@ -457,6 +455,21 @@ System_add_x(SystemObject *self, PyObject *args, PyObject *kwds)
     self->xses[c][a] += x;
     Py_RETURN_NONE;
 }
+
+static PyObject *
+System_add_ligand(SystemObject *self, PyObject *args, PyObject *kwds)
+{
+    PyObject *ligandObj;
+    
+    static char *kwlist[] = {"ligand", NULL};
+    if (!PyArg_ParseTupleAndKeywords(args, kwds, "|iid", kwlist, &PyList_Type, &ligandObj))
+        Py_RETURN_NONE;
+    
+    self->ligands[self->n_ligands] = (LigandObject *) ligandObj;
+    self->n_ligands += 1;
+    Py_RETURN_NONE;
+}
+
 
 static PyMethodDef System_methods[] = {
     {"add_x", (PyCFunction) System_add_x, METH_VARARGS | METH_KEYWORDS, "add analyte"},
