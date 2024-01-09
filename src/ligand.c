@@ -436,8 +436,19 @@ System_getxses(SystemObject *self, void *closure)
     return Py_NewRef(xsesObj);
 }
 
+static PyObject *
+System_getligands(SystemObject *self, void *closure)
+{
+    int l;
+    PyObject *ligandsObj = PyList_New(self->n_ligands);
+    for (l = 0; l < self->n_ligands; l++)
+        PyList_SetItem(ligandsObj, l, (PyObject *) self->ligands[l]);
+    return Py_NewRef(ligandsObj);
+}
+
 static PyGetSetDef System_getsetters[] = {
     {"xses", (getter) System_getxses, NULL, "analyte concentrations", NULL},
+    {"ligands", (getter) System_getligands, NULL, "ligands", NULL},
     {NULL}  /* Sentinel */
 };
 
