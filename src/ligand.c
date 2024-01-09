@@ -287,7 +287,7 @@ Ligand_init(LigandObject *self, PyObject *args, PyObject *kwds)
 static PyMemberDef Ligand_members[] = {
     {"n_sites", T_INT, offsetof(LigandObject, n_sites), READONLY, "number of binding sites"},
     {"n_particles", T_INT, offsetof(LigandObject, n_particles), READONLY, "number of particles"},
-    {"mpp", T_INT, offsetof(LigandObject, mpp), READONLY, "mole per particle"},
+    {"mpp", T_DOUBLE, offsetof(LigandObject, mpp), READONLY, "mole per particle"},
     {NULL}  /* Sentinel */
 };
 
@@ -399,13 +399,13 @@ System_init(SystemObject *self, PyObject *args, PyObject *kwds)
     int c, l;
     
     static char *kwlist[] = {"n_compartments", "n_analytes", NULL};
-    if (!PyArg_ParseTupleAndKeywords(args, kwds, "|iiO!", kwlist, &self->n_compartments, &self->n_analytes))
+    if (!PyArg_ParseTupleAndKeywords(args, kwds, "|ii", kwlist, &self->n_compartments, &self->n_analytes))
         return -1;
     
     self->xses = calloc(self->n_compartments, sizeof(double *));
     for (c = 0; c < self->n_compartments; c++)
-        self->xses[c] = calloc(self->n_analytes, sizeof(double *));
-
+        self->xses[c] = calloc(self->n_analytes, sizeof(double));
+    
     self->n_ligands = 0;
     self->ligands = calloc(self->__max_ligands__, sizeof(LigandObject *));
     return 0;
