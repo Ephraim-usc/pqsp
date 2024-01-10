@@ -27,7 +27,7 @@ typedef struct {
 } TransitionObject;
 
 static void
-Transition_dealloc(SystemObject *self)
+Transition_dealloc(TransitionObject *self)
 {
     int c, s;
     free(self->targets);
@@ -61,20 +61,20 @@ static int
 Transition_init(TransitionObject *self, PyObject *args, PyObject *kwds)
 {
     PyObject *targetsObj;
-    int c, s;
+    int c, i;
     
-    static char *kwlist[] = {"n_compartments", "n_states", NULL};
+    static char *kwlist[] = {"n_compartments", "n_states", "targets", NULL};
     if (!PyArg_ParseTupleAndKeywords(args, kwds, "|iiO!", kwlist, &self->n_compartments, &self->n_states, &PyList_Type, &targetsObj))
         return -1;
     
     self->n_targets = (int) PyList_Size(targetsObj);
-    self->targets = calloc(self->n, sizeof(int));
-    for (i = 0; i < self->n; i++)
+    self->targets = calloc(self->n_targets, sizeof(int));
+    for (i = 0; i < self->n_targets; i++)
         self->targets[i] = (int) PyLong_AsLong(PyList_GetItem(targetsObj, i));
     
-    self->Pses = calloc(self->n_compartments, sizeof(** double));
+    self->Pses = calloc(self->n_compartments, sizeof(double **));
     for (c = 0; c < self->n_compartments; c++)
-        self->Pses[c] = calloc(self->n_states, sizeof(* double));
+        self->Pses[c] = calloc(self->n_states, sizeof(double *));
     
     return 0;
 }
@@ -93,7 +93,7 @@ Transition_print(TransitionObject *self, PyObject *Py_UNUSED(ignored))
     int c, s, i;
     
     printf("targets:\n");
-    for (i = 0; i < self->n; i++)
+    for (i = 0; i < self->n_targets; i++)
         printf("%d ", self->targets[i]);
     printf("\n\n");
     
@@ -119,7 +119,6 @@ Transition_set_P(TransitionObject *self, PyObject *args, PyObject *kwds)
 {
     PyObject *PObj;
     int c, s, i;
-    double x;
     
     static char *kwlist[] = {"compartment", "state", "P", NULL};
     if (!PyArg_ParseTupleAndKeywords(args, kwds, "|iiO!", kwlist, &c, &s, &PyList_Type, &PObj))
@@ -160,8 +159,8 @@ static PyTypeObject TransitionType = {
 ******************************************************************************/
 
 
-typedef struct {
-    Node **children;
+typedef struct Node {
+    struct Node **children;
     int value;
 } Node;
 
