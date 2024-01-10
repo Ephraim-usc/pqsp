@@ -135,7 +135,7 @@ Transition_set_P(TransitionObject *self, PyObject *args, PyObject *kwds)
 
 static PyMethodDef Transition_methods[] = {
     {"print", (PyCFunction) Transition_print, METH_NOARGS, "print"},
-    {"set_P", (PyCFunction) Transition_add_ligand, METH_VARARGS | METH_KEYWORDS, "set P matrix for a given compartment for a given state"},
+    {"set_P", (PyCFunction) Transition_set_P, METH_VARARGS | METH_KEYWORDS, "set P matrix for a given compartment for a given state"},
     {NULL}  /* Sentinel */
 };
 
