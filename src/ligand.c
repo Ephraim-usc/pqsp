@@ -132,6 +132,46 @@ Transition_set_P(TransitionObject *self, PyObject *args, PyObject *kwds)
     Py_RETURN_NONE;
 }
 
+static int 
+_Transition_apply(TransitionObject *self, int n_particles, int *compartments, int *states, int *values)
+{
+    int p;
+    double *P;
+    
+    for (p = 0; p < n_particles; p++)
+    {
+        if (self->Pses[compartments[p]][states[p]])
+            P = Pses[compartments[p]][states[p]];
+        else
+            P = Pses[compartments[p]][0];
+    }
+    
+    return 0;
+}
+
+static PyObject *
+Transition_apply(TransitionObject *self, PyObject *args, PyObject *kwds)
+{
+    PyObject *compartmentsObj, *statesObj, *valuesObj;
+    int n_particles, c, s, i;
+    int *compartments, *states, *values;
+    
+    static char *kwlist[] = {"compartments", "states", "values", NULL};
+    if (!PyArg_ParseTupleAndKeywords(args, kwds, "|O!O!O!", kwlist, &PyList_Type, &compartmentsbj, &PyList_Type, &statesObj, &PyList_Type, &valuesObj))
+        Py_RETURN_NONE;
+    
+    n_particles = (int) PyList_Size(valuesObj);
+    
+    if (!self->Pses[c][s])
+        self->Pses[c][s] = calloc(self->n_targets + 1, sizeof(double));
+    for (i = 0; i < (self->n_targets + 1) * (self->n_targets + 1); i++)
+        self->Pses[c][s][i] = (double) PyFloat_AsDouble(PyList_GetItem(PObj, i));
+    
+    _Transition_apply(self, n_particles, compartments, states, values);
+    
+    Py_RETURN_NONE;
+}
+
 static PyMethodDef Transition_methods[] = {
     {"print", (PyCFunction) Transition_print, METH_NOARGS, "print"},
     {"set_P", (PyCFunction) Transition_set_P, METH_VARARGS | METH_KEYWORDS, "set P matrix for a given compartment for a given state"},
