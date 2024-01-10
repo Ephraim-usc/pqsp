@@ -34,9 +34,9 @@ Transition_dealloc(TransitionObject *self)
     for (c = 0; c < self->n_compartments; c++)
     {
         for (s = 0; s < self->n_states; s++)
-            if (self->xses[c][s])
-                free(self->xses[c][s]);
-        free(self->Pses[c])
+            if (self->Pses[c][s])
+                free(self->Pses[c][s]);
+        free(self->Pses[c]);
     }
     Py_TYPE(self)->tp_free((PyObject *) self);
 }
@@ -567,7 +567,7 @@ System_new(PyTypeObject *type, PyObject *args, PyObject *kwds)
 static int
 System_init(SystemObject *self, PyObject *args, PyObject *kwds)
 {
-    int c, l;
+    int c;
     
     static char *kwlist[] = {"n_compartments", "n_analytes", NULL};
     if (!PyArg_ParseTupleAndKeywords(args, kwds, "|ii", kwlist, &self->n_compartments, &self->n_analytes))
