@@ -556,6 +556,7 @@ Ligand_init(LigandObject *self, PyObject *args, PyObject *kwds)
 static PyMemberDef Ligand_members[] = {
     {"n_sites", T_INT, offsetof(LigandObject, n_sites), READONLY, "number of binding sites"},
     {"mpp", T_DOUBLE, offsetof(LigandObject, mpp), READONLY, "mole per particle"},
+    {"n_particles", T_LONG, offsetof(LigandObject, n_particles), READONLY, "number of particles"},
     {NULL}  /* Sentinel */
 };
 
