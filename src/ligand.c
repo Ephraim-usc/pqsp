@@ -31,7 +31,7 @@ Array2PyList_INT(int *array, int len)
     return listObj;
 }
 
-static int *
+static double *
 PyList2Array_DOUBLE(PyObject *listObj)
 {
     int len, i;
@@ -298,7 +298,6 @@ typedef struct {
     int n_particles;
     int *values; // list of indices of bound targets, instead of targets themselves, for faster transition application
     TransitionObject *transition;
-    double **Ps; // (obsolete) list of P matrices (each a (n+1)x(n+1) matrix stored in linear form), for each state, for each compartment
 } SiteObject;
 
 static void
@@ -313,7 +312,7 @@ Site_dealloc(SiteObject *self)
     for (i = 0; i < self->__max_states__; i++) if (self->Ps[i]) free(self->Ps[i]);
     free(self->values);
     Py_XDECREF(self->transition);
-    free(self->Ps);
+    
     Py_TYPE(self)->tp_free((PyObject *) self);
 }
 
@@ -333,8 +332,6 @@ Site_new(PyTypeObject *type, PyObject *args, PyObject *kwds)
         
         self->n_particles = 0;
         self->values = NULL;
-        self->transition = NULL;
-        self->Ps = NULL;
     }
     return (PyObject *) self;
 }
@@ -343,7 +340,6 @@ static int
 Site_init(SiteObject *self, PyObject *args, PyObject *kwds)
 {
     PyObject *targetsObj, *onsObj, *offsObj;
-    int i;
     
     static char *kwlist[] = {"targets", "ons", "offs", NULL};
     if (!PyArg_ParseTupleAndKeywords(args, kwds, "|O!O!O!", kwlist, &PyList_Type, &targetsObj, &PyList_Type, &onsObj, &PyList_Type, &offsObj))
@@ -359,14 +355,12 @@ Site_init(SiteObject *self, PyObject *args, PyObject *kwds)
     self->offses = calloc(self->__max_states__, sizeof(double *));
     self->offses[0] = PyList2Array_DOUBLE(offsObj);
     
-    self->transition = PyObject_Call((PyObject *) &TransitionType, PyTuple_New(0), Py_BuildValue("{s:i, s:i, s:O}", "n_compartments", self));
-    
-    self->Ps = calloc(self->__max_states__, sizeof(double *));
+    //self->transition = PyObject_Call((PyObject *) &TransitionType, PyTuple_New(0), Py_BuildValue("{s:i, s:i, s:O}", "n_compartments", self));
     return 0;
 }
 
 static PyMemberDef Site_members[] = {
-    {"n_targets", T_INT, offsetof(SiteObject, n), READONLY, "number of targets"},
+    {"n_targets", T_INT, offsetof(SiteObject, n_targets), READONLY, "number of targets"},
     {NULL}  /* Sentinel */
 };
 
@@ -376,13 +370,8 @@ Site_print(SiteObject *self, PyObject *Py_UNUSED(ignored))
     int state, i;
     
     printf("targets:\n");
-    for (i = 0; i < self->n; i++)
+    for (i = 0; i < self->n_targets; i++)
         printf("%d ", self->targets[i]);
-    printf("\n\n");
-    
-    printf("off rates:\n");
-    for (i = 0; i < self->n; i++)
-        printf("%f ", self->offs[i]);
     printf("\n\n");
     
     printf("on rates:\n");
@@ -390,12 +379,24 @@ Site_print(SiteObject *self, PyObject *Py_UNUSED(ignored))
         if (self->onses[state] != NULL)
         {
             printf("[state %d] ", state);
-            for (i = 0; i < self->n; i++)
+            for (i = 0; i < self->n_targets; i++)
                 printf("%f ", self->onses[state][i]);
             printf("\n");
         }
     printf("\n");
-    
+
+    printf("off rates:\n");
+    for (state = 0; state < self->__max_states__; state++)
+        if (self->offses[state] != NULL)
+        {
+            printf("[state %d] ", state);
+            for (i = 0; i < self->n_targets; i++)
+                printf("%f ", self->offses[state][i]);
+            printf("\n");
+        }
+    printf("\n");
+
+    /*
     printf("Ps:\n");
     for (state = 0; state < self->__max_states__; state++)
         if (self->Ps[state] != NULL)
@@ -406,6 +407,7 @@ Site_print(SiteObject *self, PyObject *Py_UNUSED(ignored))
             printf("\n");
         }
     printf("\n");
+    */
     
     Py_RETURN_NONE;
 }
@@ -428,7 +430,7 @@ Site_add_state(SiteObject *self, PyObject *args, PyObject *kwds)
     Py_RETURN_NONE;
 }
 
-
+/*
 static PyObject *
 Site_compute_Ps(SiteObject *self, PyObject *args, PyObject *kwds)
 {
@@ -468,6 +470,7 @@ Site_compute_Ps(SiteObject *self, PyObject *args, PyObject *kwds)
     
     Py_RETURN_NONE;
 }
+*/
 
 // mpp: mole per particle
 // bounds: list of bound targets for each particle
