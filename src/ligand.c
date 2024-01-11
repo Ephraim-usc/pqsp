@@ -418,7 +418,7 @@ Site_set_state(SiteObject *self, PyObject *args, PyObject *kwds)
     int state, i;
     
     static char *kwlist[] = {"state", "ons", "offs", NULL};
-    if (!PyArg_ParseTupleAndKeywords(args, kwds, "|iO!", kwlist, &state, &PyList_Type, &onsObj, &PyList_Type, &offsObj))
+    if (!PyArg_ParseTupleAndKeywords(args, kwds, "|iO!O!", kwlist, &state, &PyList_Type, &onsObj, &PyList_Type, &offsObj))
         Py_RETURN_NONE;
     
     if (!self->onses[state]) // if already added, then replace
