@@ -59,6 +59,75 @@ Array2PyList_DOUBLE(double *array, int len)
 ******************************************************************************/
 
 typedef struct {
+    /* fixed attributes */
+    int __max_states__;
+    int n_compartments; // number of compartments
+    int n_targets; // number of targets
+    
+    /* variable attributes */
+    double ***Qses; // list of P matrices, for each state, for each compartment
+    double ***Pses; // list of P matrices, for each state, for each compartment
+} Transition;
+
+static int
+Transition_compute_Ps(Transition *transition, SystemObject *systemObj, SiteObject *siteObj, double t)
+{
+    int c, s, i;
+    double *ons, *offs, *Q;
+    
+    for (c = 0; c < systemObj->n_compartments; c++)
+    {
+        for(s = 0; s < siteObj->__max_states__; s++)
+            if(siteObj->onses[s])
+            {
+                ons = siteObj->onses[s];
+                offs = siteObj->offses[s];
+                Q = transition->Qses[c][s];
+                
+                Q[0] = 0.0;
+                for (i = 0; i < siteObj->n_targets; i++)
+                {
+                    Q[0] -= ons[i] * xs[i] * t;
+                    Q[i + 1] = ons[i] * xs[i] * t;
+                }
+                for (i = 0; i < self->n; i++)
+                {
+                    Q[(siteObj->n_targets + 1) * (i + 1)] = offs[i] * t;
+                    Q[(siteObj->n_targets + 2) * (i + 1)] = - offs[i] * t;
+                }
+                
+                free(transition->Pses[c][s]);
+                transition->Pses[c][s] = r8mat_expm1(siteObj->n_targets + 1, Q);
+            }
+    }
+    
+    return 0;
+}
+
+
+for (state = 0; state < self->__max_states__; state++)
+        if (self->onses[state] != NULL)
+        {
+            Q[0] = 0.0;
+            for (i = 0; i < self->n; i++)
+            {
+                Q[0] -= self->onses[state][i] * xs[i] * t;
+                Q[i + 1] = self->onses[state][i] * xs[i] * t;
+            }
+            for (i = 0; i < self->n; i++)
+            {
+                Q[(self->n + 1) * (i + 1)] = self->offs[i] * t;
+                Q[(self->n + 2) * (i + 1)] = - self->offs[i] * t;
+            }
+            self->Ps[state] = r8mat_expm1(self->n + 1, Q);
+        }
+
+
+/******************************************************************************
+                                the Transition type
+******************************************************************************/
+
+typedef struct {
     PyObject_HEAD
     
     /* fixed attributes */
@@ -296,11 +365,6 @@ typedef struct {
     /* variable attributes */
     int n_particles;
     int *values; // list of indices of bound targets, instead of targets themselves, for faster transition application
-    
-    /* transition attributes */
-    int n_compartments;
-    double ***Qses; // list of Q matrices, for each state, for each compartment
-    double ***Pses; // list of P matrices, for each state, for each compartment
 } SiteObject;
 
 static void
@@ -313,22 +377,6 @@ Site_dealloc(SiteObject *self)
     for (i = 0; i < self->__max_states__; i++) if (self->offses[i]) free(self->offses[i]);
     free(self->offses);
     free(self->values);
-
-    for (c = 0; c < self->n_compartments; c++)
-    {
-        for (s = 0; s < self->__max_states__; s++)
-            if (self->Qses[c][s])
-                free(self->Qses[c][s]);
-        free(self->Qses[c]);
-    }
-
-    for (c = 0; c < self->n_compartments; c++)
-    {
-        for (s = 0; s < self->__max_states__; s++)
-            if (self->Pses[c][s])
-                free(self->Pses[c][s]);
-        free(self->Pses[c]);
-    }
     
     Py_TYPE(self)->tp_free((PyObject *) self);
 }
