@@ -9,6 +9,31 @@
 #include <stdint.h>
 
 
+static int *
+PyList2Array_INT(PyObject *listObj)
+{
+    int len, i;
+    len = (int) PyList_Size(listObj);
+    int *array = calloc(len, sizeof(int));
+    for (i = 0; i < len; i++)
+      array[i] = (int) PyList_GetItem(listObj, i);
+    return array;
+}
+
+static PyObject *
+Array2PyList_INT(int *array, int len)
+{
+    int i;
+    PyObject *listObj;
+    listObj = PyList_New(len);
+    for (i = 0; i < len; i++)
+        PyList_SetItem(listObj, i, (int) Py_BuildValue("i", array[i]);
+    }
+    return listObj;
+}
+
+
+
 /******************************************************************************
                                 the Transition type
 ******************************************************************************/
@@ -133,17 +158,26 @@ Transition_set_P(TransitionObject *self, PyObject *args, PyObject *kwds)
 }
 
 static int 
-_Transition_apply(TransitionObject *self, int n_particles, int *compartments, int *states, int *values)
+_Transition_apply(TransitionObject *self, int n_particles, int *compartments, int *states, int *values, int *deltas)
 {
-    int p;
+    int p, x, x_;
     double *P;
     
     for (p = 0; p < n_particles; p++)
     {
+        x = values[p];
         if (self->Pses[compartments[p]][states[p]])
-            P = Pses[compartments[p]][states[p]];
+            P = Pses[compartments[p]][states[p]] + x * (n_targets + 1); // transition matrix + shift for starting state x = transition vector for x
         else
-            P = Pses[compartments[p]][0];
+            P = Pses[compartments[p]][0] + x * (n_targets + 1);
+        
+        tmp = drand48();
+        x_ = 0;
+        for (x_ = 0; tmp -= P[x_], tmp > 0; x_++);
+
+        deltas[x] -= 0;
+        deltas[x_] += 0;
+        values[p] = x_;
     }
     
     return 0;
@@ -154,22 +188,30 @@ Transition_apply(TransitionObject *self, PyObject *args, PyObject *kwds)
 {
     PyObject *compartmentsObj, *statesObj, *valuesObj;
     int n_particles, c, s, i;
-    int *compartments, *states, *values;
+    int *compartments, *states, *values, *deltas;
     
-    static char *kwlist[] = {"compartments", "states", "values", NULL};
-    if (!PyArg_ParseTupleAndKeywords(args, kwds, "|O!O!O!", kwlist, &PyList_Type, &compartmentsbj, &PyList_Type, &statesObj, &PyList_Type, &valuesObj))
+    static char *kwlist[] = {"compartments", "states", "values", "deltas", NULL};
+    if (!PyArg_ParseTupleAndKeywords(args, kwds, "|O!O!O!", kwlist, &PyList_Type, &compartmentsbj, &PyList_Type, &statesObj, &PyList_Type, &valuesObj, &PyList_Type, &deltasObj))
         Py_RETURN_NONE;
     
     n_particles = (int) PyList_Size(valuesObj);
     
-    if (!self->Pses[c][s])
-        self->Pses[c][s] = calloc(self->n_targets + 1, sizeof(double));
-    for (i = 0; i < (self->n_targets + 1) * (self->n_targets + 1); i++)
-        self->Pses[c][s][i] = (double) PyFloat_AsDouble(PyList_GetItem(PObj, i));
+    compartments = PyList2Array_INT(compartmentsObj);
+    states = PyList2Array_INT(statesObj);
+    values = PyList2Array_INT(valuesObj);
+    deltas = PyList2Array_INT(deltasObj);
     
     _Transition_apply(self, n_particles, compartments, states, values);
     
-    Py_RETURN_NONE;
+    valuesObj = Array2PyList_INT(values);
+    deltasObj = Array2PyList_INT(deltas);
+    
+    free(compartments);
+    free(states);
+    free(values);
+    free(deltas);
+    
+    return Py_NewRef(valuesObj);
 }
 
 static PyMethodDef Transition_methods[] = {
