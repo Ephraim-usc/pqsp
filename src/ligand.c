@@ -31,6 +31,27 @@ Array2PyList_INT(int *array, int len)
     return listObj;
 }
 
+static int *
+PyList2Array_DOUBLE(PyObject *listObj)
+{
+    int len, i;
+    len = (int) PyList_Size(listObj);
+    double *array = calloc(len, sizeof(double));
+    for (i = 0; i < len; i++)
+      array[i] = (double) PyFloat_AsDouble(PyList_GetItem(listObj, i));
+    return array;
+}
+
+static PyObject *
+Array2PyList_DOUBLE(double *array, int len)
+{
+    int i;
+    PyObject *listObj;
+    listObj = PyList_New(len);
+    for (i = 0; i < len; i++)
+        PyList_SetItem(listObj, i, (PyObject *) Py_BuildValue("d", array[i]));
+    return listObj;
+}
 
 
 /******************************************************************************
@@ -157,7 +178,7 @@ Transition_set_P(TransitionObject *self, PyObject *args, PyObject *kwds)
 }
 
 static int 
-_Transition_apply(TransitionObject *self, int n_particles, int *compartments, int *states, int *values, int *deltas)
+_Transition_apply(TransitionObject *self, int n_particles, int *compartments, int *states, int *values, int *deltas) // values are indices of bound targets, not bound targets themselves
 {
     int p, x, x_;
     double *P;
@@ -267,14 +288,17 @@ typedef struct {
     PyObject_HEAD
 
     /* fixed attributes */
-    int n; // number of targets
     int __max_states__;
+    int n_targets; // number of targets
     int *targets; // list of targets
-    double *offs; // list of off rates
     double **onses; // list of lists of on rates, for each state
+    double **offses; // list of lists of off rates, for each state
     
     /* variable attributes */
-    double **Ps; // list of P matrices (each a (n+1)x(n+1) matrix stored in linear form), for each state, for each compartment
+    int n_particles;
+    int *values; // list of indices of bound targets, instead of targets themselves, for faster transition application
+    TransitionObject *transition;
+    double **Ps; // (obsolete) list of P matrices (each a (n+1)x(n+1) matrix stored in linear form), for each state, for each compartment
 } SiteObject;
 
 static void
@@ -282,10 +306,13 @@ Site_dealloc(SiteObject *self)
 {
     int i;
     free(self->targets);
-    free(self->offs);
     for (i = 0; i < self->__max_states__; i++) if (self->onses[i]) free(self->onses[i]);
     free(self->onses);
+    for (i = 0; i < self->__max_states__; i++) if (self->offses[i]) free(self->offses[i]);
+    free(self->offses);
     for (i = 0; i < self->__max_states__; i++) if (self->Ps[i]) free(self->Ps[i]);
+    free(self->values);
+    Py_XDECREF(self->transition);
     free(self->Ps);
     Py_TYPE(self)->tp_free((PyObject *) self);
 }
@@ -297,11 +324,16 @@ Site_new(PyTypeObject *type, PyObject *args, PyObject *kwds)
     self = (SiteObject *) type->tp_alloc(type, 0);
     if (self != NULL)
     {
-        self->n = 0;
         self->__max_states__ = 1024;
+        
+        self->n_targets = 0;
         self->targets = NULL;
-        self->offs = NULL;
         self->onses = NULL;
+        self->offses = NULL;
+        
+        self->n_particles = 0;
+        self->values = NULL;
+        self->transition = NULL;
         self->Ps = NULL;
     }
     return (PyObject *) self;
@@ -317,28 +349,24 @@ Site_init(SiteObject *self, PyObject *args, PyObject *kwds)
     if (!PyArg_ParseTupleAndKeywords(args, kwds, "|O!O!O!", kwlist, &PyList_Type, &targetsObj, &PyList_Type, &onsObj, &PyList_Type, &offsObj))
         return -1;
     
-    self->n = (int) PyList_Size(targetsObj);
+    self->n_targets = (int) PyList_Size(targetsObj);
     
-    self->targets = calloc(self->n, sizeof(int));
-    for (i = 0; i < self->n; i++)
-        self->targets[i] = (int) PyLong_AsLong(PyList_GetItem(targetsObj, i));
-
+    self->targets = PyList2Array_INT(targetsObj);
+    
     self->onses = calloc(self->__max_states__, sizeof(double *));
-    self->onses[0] = calloc(self->n, sizeof(double));
-    for (i = 0; i < self->n; i++)
-        self->onses[0][i] = (double) PyFloat_AsDouble(PyList_GetItem(onsObj, i));
+    self->onses[0] = PyList2Array_DOUBLE(onsObj);
     
-    self->offs = calloc(self->n, sizeof(double));
-    for (i = 0; i < self->n; i++)
-        self->offs[i] = (double) PyFloat_AsDouble(PyList_GetItem(offsObj, i));
+    self->offses = calloc(self->__max_states__, sizeof(double *));
+    self->offses[0] = PyList2Array_DOUBLE(offsObj);
+    
+    self->transition = PyObject_Call((PyObject *) &TransitionType, PyTuple_New(0), Py_BuildValue("{s:i, s:i, s:O}", "n_compartments", self));
     
     self->Ps = calloc(self->__max_states__, sizeof(double *));
-    //self->Ps[0] = r8mat_expm1(self->n, self->Qs[0]);
     return 0;
 }
 
 static PyMemberDef Site_members[] = {
-    {"n", T_INT, offsetof(SiteObject, n), READONLY, "number of states"},
+    {"n_targets", T_INT, offsetof(SiteObject, n), READONLY, "number of targets"},
     {NULL}  /* Sentinel */
 };
 
@@ -485,6 +513,7 @@ typedef struct {
     int n_sites;
     long n_particles;
     double mpp; // mole per particle
+    int *compartments; // list of compartments for each particle
     int *states; // list of states for each particle
     int **boundses; // list of lists of bound targets for each binding site
 } LigandObject;
