@@ -422,7 +422,7 @@ Site_set_state(SiteObject *self, PyObject *args, PyObject *kwds)
         Py_RETURN_NONE;
     
     if (!self->onses[state]) // if already added, then replace
-      self->onses[state] = calloc(self->n, sizeof(double));
+      self->onses[state] = calloc(self->n_targets, sizeof(double));
     for (i = 0; i < self->n_targets; i++)
         self->onses[state][i] = (double) PyFloat_AsDouble(PyList_GetItem(onsObj, i));
     
@@ -470,7 +470,6 @@ Site_compute_Ps(SiteObject *self, PyObject *args, PyObject *kwds)
 static PyMethodDef Site_methods[] = {
     {"print", (PyCFunction) Site_print, METH_NOARGS, "print the Site"},
     {"set_state", (PyCFunction) Site_set_state, METH_VARARGS | METH_KEYWORDS, "set a state (i.e., on and off rates) of the Site"},
-    {"compute_Ps", (PyCFunction) Site_compute_Ps,  METH_VARARGS | METH_KEYWORDS, "compute P matrices"},
     {NULL}  /* Sentinel */
 };
 
