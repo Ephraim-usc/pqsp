@@ -62,8 +62,8 @@ typedef struct {
     PyObject_HEAD
     
     /* fixed attributes */
+    int __max_states__;
     int n_compartments; // number of compartments
-    int n_states; // number of analytes
     int n_targets; // number of targets
     int *targets;
     
@@ -78,7 +78,7 @@ Transition_dealloc(TransitionObject *self)
     free(self->targets);
     for (c = 0; c < self->n_compartments; c++)
     {
-        for (s = 0; s < self->n_states; s++)
+        for (s = 0; s < self->__max_states__; s++)
             if (self->Pses[c][s])
                 free(self->Pses[c][s]);
         free(self->Pses[c]);
@@ -93,8 +93,8 @@ Transition_new(PyTypeObject *type, PyObject *args, PyObject *kwds)
     self = (TransitionObject *) type->tp_alloc(type, 0);
     if (self != NULL)
     {
+        self->__max_states__ = 0;
         self->n_compartments = 0;
-        self->n_states = 0;
         self->n_targets = 0;
         self->targets = NULL;
         self->Pses = NULL;
@@ -108,8 +108,8 @@ Transition_init(TransitionObject *self, PyObject *args, PyObject *kwds)
     PyObject *targetsObj;
     int c, i;
     
-    static char *kwlist[] = {"n_compartments", "n_states", "targets", NULL};
-    if (!PyArg_ParseTupleAndKeywords(args, kwds, "|iiO!", kwlist, &self->n_compartments, &self->n_states, &PyList_Type, &targetsObj))
+    static char *kwlist[] = {"n_compartments", "targets", NULL};
+    if (!PyArg_ParseTupleAndKeywords(args, kwds, "|iO!", kwlist, &self->n_compartments, &PyList_Type, &targetsObj))
         return -1;
     
     self->n_targets = (int) PyList_Size(targetsObj);
@@ -119,14 +119,13 @@ Transition_init(TransitionObject *self, PyObject *args, PyObject *kwds)
     
     self->Pses = calloc(self->n_compartments, sizeof(double **));
     for (c = 0; c < self->n_compartments; c++)
-        self->Pses[c] = calloc(self->n_states, sizeof(double *));
+        self->Pses[c] = calloc(self->__max_states__, sizeof(double *));
     
     return 0;
 }
 
 static PyMemberDef Transition_members[] = {
     {"n_compartments", T_INT, offsetof(TransitionObject, n_compartments), READONLY, "number of compartments"},
-    {"n_states", T_INT, offsetof(TransitionObject, n_states), READONLY, "number of states"},
     {"n_targets", T_INT, offsetof(TransitionObject, n_targets), READONLY, "number of targets"},
     {NULL}  /* Sentinel */
 };
@@ -145,7 +144,7 @@ Transition_print(TransitionObject *self, PyObject *Py_UNUSED(ignored))
     printf("P matrices:\n");
     for (c = 0; c < self->n_compartments; c++)
     {
-        for (s = 0; s < self->n_states; s++)
+        for (s = 0; s < self->__max_states__; s++)
         if (self->Pses[c][s])
         {
             printf("[compartment %d, state %d] ", c, s);
@@ -297,18 +296,39 @@ typedef struct {
     /* variable attributes */
     int n_particles;
     int *values; // list of indices of bound targets, instead of targets themselves, for faster transition application
+    
+    /* transition attributes */
+    int n_compartments;
+    double ***Qses; // list of Q matrices, for each state, for each compartment
+    double ***Pses; // list of P matrices, for each state, for each compartment
 } SiteObject;
 
 static void
 Site_dealloc(SiteObject *self)
 {
-    int i;
+    int c, i;
     free(self->targets);
     for (i = 0; i < self->__max_states__; i++) if (self->onses[i]) free(self->onses[i]);
     free(self->onses);
     for (i = 0; i < self->__max_states__; i++) if (self->offses[i]) free(self->offses[i]);
     free(self->offses);
     free(self->values);
+
+    for (c = 0; c < self->n_compartments; c++)
+    {
+        for (s = 0; s < self->__max_states__; s++)
+            if (self->Qses[c][s])
+                free(self->Qses[c][s]);
+        free(self->Qses[c]);
+    }
+
+    for (c = 0; c < self->n_compartments; c++)
+    {
+        for (s = 0; s < self->__max_states__; s++)
+            if (self->Pses[c][s])
+                free(self->Pses[c][s]);
+        free(self->Pses[c]);
+    }
     
     Py_TYPE(self)->tp_free((PyObject *) self);
 }
