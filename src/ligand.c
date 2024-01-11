@@ -500,13 +500,16 @@ static PyTypeObject SiteType = {
 
 typedef struct {
     PyObject_HEAD
-    SiteObject **sites;
+    
+    /* fixed attributes */
     int n_sites;
-    long n_particles;
+    SiteObject **sites;
+    
+    /* variable attributes */
     double mpp; // mole per particle
+    long n_particles;
     int *compartments; // list of compartments for each particle
     int *states; // list of states for each particle
-    int **boundses; // list of lists of bound targets for each binding site
 } LigandObject;
 
 static void
@@ -515,9 +518,8 @@ Ligand_dealloc(LigandObject *self)
     int s;
     for (s = 0; s < self->n_sites; s++)
       Py_XDECREF(self->sites[s]);
-      free(self->boundses[s]);
+    free(self->compartments);
     free(self->states);
-    free(self->boundses);
     Py_TYPE(self)->tp_free((PyObject *) self);
 }
 
@@ -529,10 +531,11 @@ Ligand_new(PyTypeObject *type, PyObject *args, PyObject *kwds)
     if (self != NULL) {
         self->n_sites = 0;
         self->sites = NULL;
+        
         self->n_particles = 0;
         self->mpp = 0.0;
+        self->compartments = NULL;
         self->states = NULL;
-        self->boundses = NULL;
     }
     return (PyObject *) self;
 }
@@ -543,24 +546,20 @@ Ligand_init(LigandObject *self, PyObject *args, PyObject *kwds)
     PyObject *sitesObj;
     int s;
     
-    static char *kwlist[] = {"sites", "n_particles", "mpp", NULL};
-    if (!PyArg_ParseTupleAndKeywords(args, kwds, "|O!ld", kwlist, &PyList_Type, &sitesObj, &self->n_particles, &self->mpp))
+    static char *kwlist[] = {"sites", NULL};
+    if (!PyArg_ParseTupleAndKeywords(args, kwds, "|O!", kwlist, &PyList_Type, &sitesObj))
         return -1;
     
     self->n_sites = (int) PyList_Size(sitesObj);
     self->sites = calloc(self->n_sites, sizeof(SiteObject *));
     for(s = 0; s < self->n_sites; s++)
       self->sites[s] = (SiteObject *) PyList_GetItem(sitesObj, s);
-    self->states = calloc(self->n_particles, sizeof(int));
-    self->boundses = calloc(self->n_sites, sizeof(int *));
-    for(s = 0; s < self->n_sites; s++)
-      self->boundses[s] = calloc(self->n_particles, sizeof(int));
+    
     return 0;
 }
 
 static PyMemberDef Ligand_members[] = {
     {"n_sites", T_INT, offsetof(LigandObject, n_sites), READONLY, "number of binding sites"},
-    {"n_particles", T_INT, offsetof(LigandObject, n_particles), READONLY, "number of particles"},
     {"mpp", T_DOUBLE, offsetof(LigandObject, mpp), READONLY, "mole per particle"},
     {NULL}  /* Sentinel */
 };
@@ -576,6 +575,16 @@ Ligand_getsites(LigandObject *self, void *closure)
 }
 
 static PyObject *
+Ligand_getcompartments(LigandObject *self, void *closure)
+{
+    int i;
+    PyObject *compartmentsObj = PyList_New(self->n_particles);
+    for (i = 0; i < self->n_particles; i++)
+        PyList_SetItem(compartmentsObj, i, (PyObject *) Py_BuildValue("i", self->compartments[i]));
+    return Py_NewRef(compartmentsObj);
+}
+
+static PyObject *
 Ligand_getstates(LigandObject *self, void *closure)
 {
     int i;
@@ -585,26 +594,10 @@ Ligand_getstates(LigandObject *self, void *closure)
     return Py_NewRef(statesObj);
 }
 
-static PyObject *
-Ligand_getboundses(LigandObject *self, void *closure)
-{
-    int s, i;
-    PyObject *boundsesObj = PyList_New(self->n_sites);
-    PyObject *boundsObj;
-    for (s = 0; s < self->n_sites; s++)
-    {
-        boundsObj = PyList_New(self->n_particles);
-        for (i = 0; i < self->n_particles; i++)
-            PyList_SetItem(boundsObj, i, (PyObject *) Py_BuildValue("i", self->boundses[s][i]));
-        PyList_SetItem(boundsesObj, s, (PyObject *) boundsObj);
-    }
-    return Py_NewRef(boundsesObj);
-}
-
 static PyGetSetDef Ligand_getsetters[] = {
     {"sites", (getter) Ligand_getsites, NULL, "binding sites", NULL},
-    {"states", (getter) Ligand_getstates, NULL, "states of each particle", NULL},
-    {"boundses", (getter) Ligand_getboundses, NULL, "bound targets on each site for each particle", NULL},
+    {"compartments", (getter) Ligand_getstates, NULL, "list of compartments for each particle", NULL},
+    {"states", (getter) Ligand_getstates, NULL, "list of states, for each particle", NULL},
     {NULL}  /* Sentinel */
 };
 
