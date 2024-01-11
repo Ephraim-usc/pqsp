@@ -414,17 +414,22 @@ Site_print(SiteObject *self, PyObject *Py_UNUSED(ignored))
 static PyObject *
 Site_set_state(SiteObject *self, PyObject *args, PyObject *kwds)
 {
-    PyObject *onsObj;
+    PyObject *onsObj, *offsObj;
     int state, i;
     
-    static char *kwlist[] = {"state", "ons", NULL};
-    if (!PyArg_ParseTupleAndKeywords(args, kwds, "|iO!", kwlist, &state, &PyList_Type, &onsObj))
+    static char *kwlist[] = {"state", "ons", "offs", NULL};
+    if (!PyArg_ParseTupleAndKeywords(args, kwds, "|iO!", kwlist, &state, &PyList_Type, &onsObj, &PyList_Type, &offsObj))
         Py_RETURN_NONE;
     
     if (!self->onses[state]) // if already added, then replace
-      self->onses[state] = calloc(self->n_targets, sizeof(double));
+        self->onses[state] = calloc(self->n_targets, sizeof(double));
     for (i = 0; i < self->n_targets; i++)
         self->onses[state][i] = (double) PyFloat_AsDouble(PyList_GetItem(onsObj, i));
+    
+    if (!self->offses[state]) // if already added, then replace
+        self->offses[state] = calloc(self->n_targets, sizeof(double));
+    for (i = 0; i < self->n_targets; i++)
+        self->offses[state][i] = (double) PyFloat_AsDouble(PyList_GetItem(offsObj, i));
     
     Py_RETURN_NONE;
 }
