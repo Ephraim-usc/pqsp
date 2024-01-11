@@ -172,7 +172,6 @@ _Transition_apply(TransitionObject *self, int n_particles, int *compartments, in
             P = self->Pses[compartments[p]][0] + x * (self->n_targets + 1);
         
         tmp = drand48();
-        printf("%f %f %f, %f\n", P[0], P[1], P[2], tmp);
         x_ = 0;
         for (x_ = 0; tmp -= P[x_], tmp > 0; x_++);
         
