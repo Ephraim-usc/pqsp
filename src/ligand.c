@@ -642,6 +642,7 @@ Ligand_add_particles(LigandObject *self, PyObject *args, PyObject *kwds)
 
 static PyMethodDef Ligand_methods[] = {
     {"set_mpp", (PyCFunction) Ligand_set_mpp, METH_VARARGS | METH_KEYWORDS, "set the mpp value of the ligand"},
+    {"add_particles", (PyCFunction) Ligand_add_particles, METH_VARARGS | METH_KEYWORDS, "add particles of the ligand"},
     {NULL}  /* Sentinel */
 };
 
