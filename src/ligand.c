@@ -309,7 +309,6 @@ Site_dealloc(SiteObject *self)
     free(self->onses);
     for (i = 0; i < self->__max_states__; i++) if (self->offses[i]) free(self->offses[i]);
     free(self->offses);
-    for (i = 0; i < self->__max_states__; i++) if (self->Ps[i]) free(self->Ps[i]);
     free(self->values);
     Py_XDECREF(self->transition);
     
@@ -413,7 +412,7 @@ Site_print(SiteObject *self, PyObject *Py_UNUSED(ignored))
 }
 
 static PyObject *
-Site_add_state(SiteObject *self, PyObject *args, PyObject *kwds)
+Site_set_state(SiteObject *self, PyObject *args, PyObject *kwds)
 {
     PyObject *onsObj;
     int state, i;
@@ -424,7 +423,7 @@ Site_add_state(SiteObject *self, PyObject *args, PyObject *kwds)
     
     if (!self->onses[state]) // if already added, then replace
       self->onses[state] = calloc(self->n, sizeof(double));
-    for (i = 0; i < self->n; i++)
+    for (i = 0; i < self->n_targets; i++)
         self->onses[state][i] = (double) PyFloat_AsDouble(PyList_GetItem(onsObj, i));
     
     Py_RETURN_NONE;
@@ -461,10 +460,6 @@ Site_compute_Ps(SiteObject *self, PyObject *args, PyObject *kwds)
                 Q[(self->n + 1) * (i + 1)] = self->offs[i] * t;
                 Q[(self->n + 2) * (i + 1)] = - self->offs[i] * t;
             }
-            /* printf("[state %d] ", state);
-            for (i = 0; i < (self->n + 1) * (self->n + 1); i++)
-                printf("%f ", Q[i]);
-            printf("\n"); */
             self->Ps[state] = r8mat_expm1(self->n + 1, Q);
         }
     
@@ -472,20 +467,9 @@ Site_compute_Ps(SiteObject *self, PyObject *args, PyObject *kwds)
 }
 */
 
-// mpp: mole per particle
-// bounds: list of bound targets for each particle
-// xs: list of concentrations for each target
-// xs_: list of updated concentrations for each target
-static int
-Site_bind(SiteObject *self, int n_particles, double mpp, double *bounds, double *xs, double *xs_) 
-{
-    ;
-    return 0;
-}
-
 static PyMethodDef Site_methods[] = {
     {"print", (PyCFunction) Site_print, METH_NOARGS, "print the Site"},
-    {"add_state", (PyCFunction) Site_add_state, METH_VARARGS | METH_KEYWORDS, "add a state to the Site"},
+    {"set_state", (PyCFunction) Site_set_state, METH_VARARGS | METH_KEYWORDS, "set a state (i.e., on and off rates) of the Site"},
     {"compute_Ps", (PyCFunction) Site_compute_Ps,  METH_VARARGS | METH_KEYWORDS, "compute P matrices"},
     {NULL}  /* Sentinel */
 };
