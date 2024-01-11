@@ -105,24 +105,6 @@ Transition_compute_Ps(Transition *transition, SystemObject *systemObj, SiteObjec
 }
 
 
-for (state = 0; state < self->__max_states__; state++)
-        if (self->onses[state] != NULL)
-        {
-            Q[0] = 0.0;
-            for (i = 0; i < self->n; i++)
-            {
-                Q[0] -= self->onses[state][i] * xs[i] * t;
-                Q[i + 1] = self->onses[state][i] * xs[i] * t;
-            }
-            for (i = 0; i < self->n; i++)
-            {
-                Q[(self->n + 1) * (i + 1)] = self->offs[i] * t;
-                Q[(self->n + 2) * (i + 1)] = - self->offs[i] * t;
-            }
-            self->Ps[state] = r8mat_expm1(self->n + 1, Q);
-        }
-
-
 /******************************************************************************
                                 the Transition type
 ******************************************************************************/
