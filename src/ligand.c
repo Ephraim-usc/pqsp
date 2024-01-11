@@ -297,7 +297,6 @@ typedef struct {
     /* variable attributes */
     int n_particles;
     int *values; // list of indices of bound targets, instead of targets themselves, for faster transition application
-    TransitionObject *transition;
 } SiteObject;
 
 static void
@@ -310,7 +309,6 @@ Site_dealloc(SiteObject *self)
     for (i = 0; i < self->__max_states__; i++) if (self->offses[i]) free(self->offses[i]);
     free(self->offses);
     free(self->values);
-    Py_XDECREF(self->transition);
     
     Py_TYPE(self)->tp_free((PyObject *) self);
 }
@@ -515,9 +513,6 @@ typedef struct {
 static void
 Ligand_dealloc(LigandObject *self)
 {
-    int s;
-    //for (s = 0; s < self->n_sites; s++)
-    //  Py_XDECREF(self->sites[s]);
     free(self->compartments);
     free(self->states);
     Py_TYPE(self)->tp_free((PyObject *) self);
@@ -614,13 +609,33 @@ Ligand_set_mpp(LigandObject *self, PyObject *args, PyObject *kwds)
 static PyObject *
 Ligand_add_particles(LigandObject *self, PyObject *args, PyObject *kwds)
 {
-    int n;
+    int n, p, st;
+    long n_particles_old;
+    int *compartments_old;
+    int *states_old;
     
     static char *kwlist[] = {"n", NULL};
     if (!PyArg_ParseTupleAndKeywords(args, kwds, "|d", kwlist, &n))
         Py_RETURN_NONE;
-    
+
+    n_particles_old = self->n_particles;
+    compartments_old = self->compartments;
+    states_old = self->states;
+
     self->n_particles += n;
+    
+    self->compartments = calloc(self->n_particles, sizeof(int));
+    for(p = 0; p < n_particles_old; p++)
+        self->compartments[p] = compartments_old[p];
+    free(compartments_old);
+    
+    self->states = calloc(self->n_particles, sizeof(int));
+    for(p = 0; p < n_particles_old; p++)
+        self->states[p] = states_old[p];
+    free(states_old);
+    
+    //for(st = 0; st < self->n_sites; st++)
+    //    self->sites[st]._add_particles(n);
     
     Py_RETURN_NONE;
 }
