@@ -211,7 +211,7 @@ Transition_apply(TransitionObject *self, PyObject *args, PyObject *kwds)
     free(values);
     free(deltas);
     
-    return Py_NewRef(valuesObj);
+    return Py_NewRef(Py_BuildValue("(OO)", valuesObj, deltasObj));
 }
 
 static PyMethodDef Transition_methods[] = {
