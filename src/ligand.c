@@ -604,11 +604,8 @@ static PyGetSetDef Ligand_getsetters[] = {
 static PyObject *
 Ligand_set_mpp(LigandObject *self, PyObject *args, PyObject *kwds)
 {
-    PyObject *onsObj, *offsObj;
-    int state, i;
-    
     static char *kwlist[] = {"mpp", NULL};
-    if (!PyArg_ParseTupleAndKeywords(args, kwds, "|i", kwlist, &self->mpp))
+    if (!PyArg_ParseTupleAndKeywords(args, kwds, "|d", kwlist, &self->mpp))
         Py_RETURN_NONE;
     
     Py_RETURN_NONE;
