@@ -601,6 +601,24 @@ static PyGetSetDef Ligand_getsetters[] = {
     {NULL}  /* Sentinel */
 };
 
+static PyObject *
+Ligand_set_mpp(LigandObject *self, PyObject *args, PyObject *kwds)
+{
+    PyObject *onsObj, *offsObj;
+    int state, i;
+    
+    static char *kwlist[] = {"mpp", NULL};
+    if (!PyArg_ParseTupleAndKeywords(args, kwds, "|i", kwlist, &self->mpp))
+        Py_RETURN_NONE;
+    
+    Py_RETURN_NONE;
+}
+
+static PyMethodDef Ligand_methods[] = {
+    {"set_mpp", (PyCFunction) Ligand_set_mpp, METH_VARARGS | METH_KEYWORDS, "set the mpp value of the ligand"},
+    {NULL}  /* Sentinel */
+};
+
 static PyTypeObject LigandType = {
     .ob_base = PyVarObject_HEAD_INIT(NULL, 0)
     .tp_name = "ligand.Ligand",
@@ -611,6 +629,7 @@ static PyTypeObject LigandType = {
     .tp_new = Ligand_new,
     .tp_init = (initproc) Ligand_init,
     .tp_members = Ligand_members,
+    .tp_methods = Ligand_methods,
     .tp_dealloc = (destructor) Ligand_dealloc,
     .tp_getset = Ligand_getsetters,
 };
