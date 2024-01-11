@@ -149,7 +149,7 @@ Transition_set_P(TransitionObject *self, PyObject *args, PyObject *kwds)
         Py_RETURN_NONE;
     
     if (!self->Pses[c][s])
-        self->Pses[c][s] = calloc(self->n_targets + 1, sizeof(double));
+        self->Pses[c][s] = calloc((self->n_targets + 1) * (self->n_targets + 1), sizeof(double));
     for (i = 0; i < (self->n_targets + 1) * (self->n_targets + 1); i++)
         self->Pses[c][s][i] = (double) PyFloat_AsDouble(PyList_GetItem(PObj, i));
     
@@ -175,8 +175,8 @@ _Transition_apply(TransitionObject *self, int n_particles, int *compartments, in
         x_ = 0;
         for (x_ = 0; tmp -= P[x_], tmp > 0; x_++);
 
-        deltas[x] -= 0;
-        deltas[x_] += 0;
+        deltas[x] -= 1;
+        deltas[x_] += 1;
         values[p] = x_;
     }
     
