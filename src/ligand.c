@@ -609,19 +609,20 @@ Ligand_set_mpp(LigandObject *self, PyObject *args, PyObject *kwds)
 static PyObject *
 Ligand_add_particles(LigandObject *self, PyObject *args, PyObject *kwds)
 {
-    int n, p, st;
+    long n;
+    int p, st;
     long n_particles_old;
     int *compartments_old;
     int *states_old;
     
     static char *kwlist[] = {"n", NULL};
-    if (!PyArg_ParseTupleAndKeywords(args, kwds, "|d", kwlist, &n))
+    if (!PyArg_ParseTupleAndKeywords(args, kwds, "|l", kwlist, &n))
         Py_RETURN_NONE;
 
     n_particles_old = self->n_particles;
     compartments_old = self->compartments;
     states_old = self->states;
-
+    
     self->n_particles += n;
     
     self->compartments = calloc(self->n_particles, sizeof(int));
