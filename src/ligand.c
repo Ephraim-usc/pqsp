@@ -516,8 +516,8 @@ static void
 Ligand_dealloc(LigandObject *self)
 {
     int s;
-    for (s = 0; s < self->n_sites; s++)
-      Py_XDECREF(self->sites[s]);
+    //for (s = 0; s < self->n_sites; s++)
+    //  Py_XDECREF(self->sites[s]);
     free(self->compartments);
     free(self->states);
     Py_TYPE(self)->tp_free((PyObject *) self);
@@ -607,6 +607,20 @@ Ligand_set_mpp(LigandObject *self, PyObject *args, PyObject *kwds)
     static char *kwlist[] = {"mpp", NULL};
     if (!PyArg_ParseTupleAndKeywords(args, kwds, "|d", kwlist, &self->mpp))
         Py_RETURN_NONE;
+    
+    Py_RETURN_NONE;
+}
+
+static PyObject *
+Ligand_add_particles(LigandObject *self, PyObject *args, PyObject *kwds)
+{
+    int n;
+    
+    static char *kwlist[] = {"n", NULL};
+    if (!PyArg_ParseTupleAndKeywords(args, kwds, "|d", kwlist, &n))
+        Py_RETURN_NONE;
+    
+    self->n_particles += n;
     
     Py_RETURN_NONE;
 }
