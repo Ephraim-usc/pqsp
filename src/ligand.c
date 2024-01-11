@@ -170,11 +170,12 @@ _Transition_apply(TransitionObject *self, int n_particles, int *compartments, in
             P = self->Pses[compartments[p]][states[p]] + x * (self->n_targets + 1); // transition matrix + shift for starting state x = transition vector for x
         else
             P = self->Pses[compartments[p]][0] + x * (self->n_targets + 1);
+        printf("%f %f %f", P[0], P[1], P[2]);
         
         tmp = drand48();
         x_ = 0;
         for (x_ = 0; tmp -= P[x_], tmp > 0; x_++);
-
+        
         deltas[x] -= 1;
         deltas[x_] += 1;
         values[p] = x_;
@@ -204,7 +205,7 @@ Transition_apply(TransitionObject *self, PyObject *args, PyObject *kwds)
     _Transition_apply(self, n_particles, compartments, states, values, deltas);
     
     valuesObj = Array2PyList_INT(values, n_particles);
-    deltasObj = Array2PyList_INT(deltas, n_particles);
+    deltasObj = Array2PyList_INT(deltas, self->n_targets);
     
     free(compartments);
     free(states);
