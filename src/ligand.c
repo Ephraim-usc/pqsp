@@ -28,7 +28,6 @@ Array2PyList_INT(int *array, int len)
     listObj = PyList_New(len);
     for (i = 0; i < len; i++)
         PyList_SetItem(listObj, i, (PyObject *) Py_BuildValue("i", array[i]));
-    }
     return listObj;
 }
 
