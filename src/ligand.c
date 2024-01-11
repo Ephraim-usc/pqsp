@@ -191,7 +191,7 @@ Transition_apply(TransitionObject *self, PyObject *args, PyObject *kwds)
     int *compartments, *states, *values, *deltas;
     
     static char *kwlist[] = {"compartments", "states", "values", "deltas", NULL};
-    if (!PyArg_ParseTupleAndKeywords(args, kwds, "|O!O!O!", kwlist, &PyList_Type, &compartmentsObj, &PyList_Type, &statesObj, &PyList_Type, &valuesObj, &PyList_Type, &deltasObj))
+    if (!PyArg_ParseTupleAndKeywords(args, kwds, "|O!O!O!O!", kwlist, &PyList_Type, &compartmentsObj, &PyList_Type, &statesObj, &PyList_Type, &valuesObj, &PyList_Type, &deltasObj))
         Py_RETURN_NONE;
     
     n_particles = (int) PyList_Size(valuesObj);
