@@ -179,11 +179,11 @@ Transition_print(Transition *transition)
                 
                 printf("[compartment %d, state %d]\n", c, s);
                 printf("[Q] ");
-                for (i = 0; i < transition->n_targets; i++)
+                for (i = 0; i < (transition->n_targets + 1) * (transition->n_targets + 1); i++)
                     printf("%f ", Q[i]);
                 printf("\n");
                 printf("[P] ");
-                for (i = 0; i < transition->n_targets; i++)
+                for (i = 0; i < (transition->n_targets + 1) * (transition->n_targets + 1); i++)
                     printf("%f ", P[i]);
                 printf("\n");
             }
