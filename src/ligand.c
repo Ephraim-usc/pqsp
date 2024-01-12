@@ -55,7 +55,7 @@ Array2PyList_DOUBLE(double *array, int len)
 
 
 /******************************************************************************
-                                the Transition type
+                     the Transition type declarations
 ******************************************************************************/
 
 typedef struct {
@@ -69,6 +69,11 @@ typedef struct {
     double ***Pses; // list of P matrices, for each state, for each compartment
 } Transition;
 
+static Transition *
+Transition_create(SystemObject *systemObj, SiteObject *siteObj, double t);
+
+static int
+Transition_print(Transition *transition);
 
 
 /******************************************************************************
@@ -523,7 +528,7 @@ static int
 Transition_print(Transition *transition)
 {   
     int c, s, i;
-    double *ons, *offs, *Q, *P;
+    double *Q, *P;
     
     for (c = 0; c < transition->n_compartments; c++)
     {
