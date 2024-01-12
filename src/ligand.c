@@ -317,7 +317,7 @@ typedef struct {
 static void
 Site_dealloc(SiteObject *self)
 {
-    int c, i;
+    int i;
     free(self->targets);
     for (i = 0; i < self->__max_states__; i++) if (self->onses[i]) free(self->onses[i]);
     free(self->onses);
@@ -856,13 +856,15 @@ static PyTypeObject SystemType = {
 static Transition *
 Transition_create(SystemObject *systemObj, SiteObject *siteObj, double t)
 {
-    Transition *transition = &{.__max_states__ = 1024, .n_compartments = systemObj->compartments, .n_targets = siteObj->n_targets};
+    Transition tmp = {.__max_states__ = 1024, .n_compartments = systemObj->compartments, .n_targets = siteObj->n_targets};
+    Transition *transition = &tmp;
     
     int c, s, i;
-    double *ons, *offs, *Q;
+    double *ons, *offs, *xs, *Q;
     
     for (c = 0; c < systemObj->n_compartments; c++)
     {
+        xs = systemObj->xses[c];
         for(s = 0; s < siteObj->__max_states__; s++)
             if(siteObj->onses[s])
             {
@@ -876,7 +878,7 @@ Transition_create(SystemObject *systemObj, SiteObject *siteObj, double t)
                     Q[0] -= ons[i] * xs[i] * t;
                     Q[i + 1] = ons[i] * xs[i] * t;
                 }
-                for (i = 0; i < self->n; i++)
+                for (i = 0; i < siteObj->n_targets; i++)
                 {
                     Q[(siteObj->n_targets + 1) * (i + 1)] = offs[i] * t;
                     Q[(siteObj->n_targets + 2) * (i + 1)] = - offs[i] * t;
@@ -893,7 +895,7 @@ static int
 Transition_print(Transition *transition)
 {   
     int c, s, i;
-    double *ons, *offs, *Q;
+    double *ons, *offs, *Q, *P;
     
     for (c = 0; c < transition->n_compartments; c++)
     {
