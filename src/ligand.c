@@ -151,8 +151,8 @@ Transition_create(SystemObject *systemObj, SiteObject *siteObj, double t)
                 Q[0] = 0.0;
                 for (i = 0; i < siteObj->n_targets; i++)
                 {
-                    Q[0] -= ons[i] * xs[i] * t;
-                    Q[i + 1] = ons[i] * xs[i] * t;
+                    Q[0] -= ons[i] * xs[siteObj->targets[i]] * t;
+                    Q[i + 1] = ons[i] * xs[siteObj->targets[i]] * t;
                 }
                 for (i = 0; i < siteObj->n_targets; i++)
                 {
@@ -194,6 +194,7 @@ Transition_print(Transition *transition)
     return 0;
 }
 
+/*
 static int 
 _Transition_apply(Transition *transition, int n_particles, int *compartments, int *states, int *values, int *deltas)
 {
@@ -245,7 +246,7 @@ _Transition_apply(Transition *transition, SystemObject *systemObj, SiteObject *s
     
     return 0;
 }
-
+*/
 
 /******************************************************************************
                                 the Dict type
