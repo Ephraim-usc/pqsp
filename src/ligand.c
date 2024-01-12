@@ -126,14 +126,21 @@ Transition_create(SystemObject *systemObj, SiteObject *siteObj, double t)
     
     int c, s, i;
     double *ons, *offs, *xs, *Q;
-
-    /*
+    
+    transition->Qses = calloc(systemObj->n_compartments, sizeof(double **));
+    transition->Pses = calloc(systemObj->n_compartments, sizeof(double **));
+    
     for (c = 0; c < systemObj->n_compartments; c++)
     {
+        transition->Qses[c] = calloc(transition->__max_states__, sizeof(double *));
+        transition->Pses[c] = calloc(transition->__max_states__, sizeof(double *));
+        
         xs = systemObj->xses[c];
         for(s = 0; s < siteObj->__max_states__; s++)
             if(siteObj->onses[s])
             {
+                transition->Qses[c][s] = calloc((siteObj->n_targets + 1) * (siteObj->n_targets + 1), sizeof(double));
+                
                 ons = siteObj->onses[s];
                 offs = siteObj->offses[s];
                 Q = transition->Qses[c][s];
@@ -150,11 +157,9 @@ Transition_create(SystemObject *systemObj, SiteObject *siteObj, double t)
                     Q[(siteObj->n_targets + 2) * (i + 1)] = - offs[i] * t;
                 }
                 
-                free(transition->Pses[c][s]);
                 transition->Pses[c][s] = r8mat_expm1(siteObj->n_targets + 1, Q);
             }
     }
-    */
     return transition;
 }
 
