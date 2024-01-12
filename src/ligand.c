@@ -892,6 +892,7 @@ System_show_transition(SystemObject *self, PyObject *args, PyObject *kwds)
 static PyMethodDef System_methods[] = {
     {"add_x", (PyCFunction) System_add_x, METH_VARARGS | METH_KEYWORDS, "add analyte"},
     {"add_ligand", (PyCFunction) System_add_ligand, METH_VARARGS | METH_KEYWORDS, "add ligand"},
+    {"show_transition", (PyCFunction) System_show_transition, METH_VARARGS | METH_KEYWORDS, "show the transition"},
     {NULL}  /* Sentinel */
 };
 
