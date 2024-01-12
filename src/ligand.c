@@ -483,77 +483,6 @@ static PyTypeObject LigandType = {
 
 
 /******************************************************************************
-               Transition functions (temperarily put here)
-******************************************************************************/
-
-static Transition *
-Transition_create(SystemObject *systemObj, SiteObject *siteObj, double t)
-{
-    Transition tmp = {.__max_states__ = 1024, .n_compartments = systemObj->compartments, .n_targets = siteObj->n_targets};
-    Transition *transition = &tmp;
-    
-    int c, s, i;
-    double *ons, *offs, *xs, *Q;
-    
-    for (c = 0; c < systemObj->n_compartments; c++)
-    {
-        xs = systemObj->xses[c];
-        for(s = 0; s < siteObj->__max_states__; s++)
-            if(siteObj->onses[s])
-            {
-                ons = siteObj->onses[s];
-                offs = siteObj->offses[s];
-                Q = transition->Qses[c][s];
-                
-                Q[0] = 0.0;
-                for (i = 0; i < siteObj->n_targets; i++)
-                {
-                    Q[0] -= ons[i] * xs[i] * t;
-                    Q[i + 1] = ons[i] * xs[i] * t;
-                }
-                for (i = 0; i < siteObj->n_targets; i++)
-                {
-                    Q[(siteObj->n_targets + 1) * (i + 1)] = offs[i] * t;
-                    Q[(siteObj->n_targets + 2) * (i + 1)] = - offs[i] * t;
-                }
-                
-                free(transition->Pses[c][s]);
-                transition->Pses[c][s] = r8mat_expm1(siteObj->n_targets + 1, Q);
-            }
-    }
-    return transition;
-}
-
-static int
-Transition_print(Transition *transition)
-{   
-    int c, s, i;
-    double *Q, *P;
-    
-    for (c = 0; c < transition->n_compartments; c++)
-    {
-        for(s = 0; s < transition->__max_states__; s++)
-            if(transition->Qses[c][s])
-            {
-                Q = transition->Qses[c][s];
-                P = transition->Pses[c][s];
-                
-                printf("[compartment %d, state %d]\n", c, s);
-                printf("[Q] ");
-                for (i = 0; i < transition->n_targets; i++)
-                    printf("%f ", Q[i]);
-                printf("\n");
-                printf("[P] ");
-                for (i = 0; i < transition->n_targets; i++)
-                    printf("%f ", P[i]);
-                printf("\n");
-            }
-    }
-    return 0;
-}
-
-
-/******************************************************************************
                                 the System type
 ******************************************************************************/
 
@@ -720,6 +649,78 @@ static PyTypeObject SystemType = {
     .tp_dealloc = (destructor) System_dealloc,
     .tp_getset = System_getsetters,
 };
+
+
+
+/******************************************************************************
+               Transition functions (temperarily put here)
+******************************************************************************/
+
+static Transition *
+Transition_create(SystemObject *systemObj, SiteObject *siteObj, double t)
+{
+    Transition tmp = {.__max_states__ = 1024, .n_compartments = systemObj->compartments, .n_targets = siteObj->n_targets};
+    Transition *transition = &tmp;
+    
+    int c, s, i;
+    double *ons, *offs, *xs, *Q;
+    
+    for (c = 0; c < systemObj->n_compartments; c++)
+    {
+        xs = systemObj->xses[c];
+        for(s = 0; s < siteObj->__max_states__; s++)
+            if(siteObj->onses[s])
+            {
+                ons = siteObj->onses[s];
+                offs = siteObj->offses[s];
+                Q = transition->Qses[c][s];
+                
+                Q[0] = 0.0;
+                for (i = 0; i < siteObj->n_targets; i++)
+                {
+                    Q[0] -= ons[i] * xs[i] * t;
+                    Q[i + 1] = ons[i] * xs[i] * t;
+                }
+                for (i = 0; i < siteObj->n_targets; i++)
+                {
+                    Q[(siteObj->n_targets + 1) * (i + 1)] = offs[i] * t;
+                    Q[(siteObj->n_targets + 2) * (i + 1)] = - offs[i] * t;
+                }
+                
+                free(transition->Pses[c][s]);
+                transition->Pses[c][s] = r8mat_expm1(siteObj->n_targets + 1, Q);
+            }
+    }
+    return transition;
+}
+
+static int
+Transition_print(Transition *transition)
+{   
+    int c, s, i;
+    double *Q, *P;
+    
+    for (c = 0; c < transition->n_compartments; c++)
+    {
+        for(s = 0; s < transition->__max_states__; s++)
+            if(transition->Qses[c][s])
+            {
+                Q = transition->Qses[c][s];
+                P = transition->Pses[c][s];
+                
+                printf("[compartment %d, state %d]\n", c, s);
+                printf("[Q] ");
+                for (i = 0; i < transition->n_targets; i++)
+                    printf("%f ", Q[i]);
+                printf("\n");
+                printf("[P] ");
+                for (i = 0; i < transition->n_targets; i++)
+                    printf("%f ", P[i]);
+                printf("\n");
+            }
+    }
+    return 0;
+}
 
 
 /******************************************************************************
