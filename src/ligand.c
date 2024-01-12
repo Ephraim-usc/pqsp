@@ -121,7 +121,7 @@ typedef struct {
 static Transition *
 Transition_create(SystemObject *systemObj, SiteObject *siteObj, double t)
 {
-    Transition tmp = {.__max_states__ = 1024, .n_compartments = systemObj->compartments, .n_targets = siteObj->n_targets};
+    Transition tmp = {.__max_states__ = 1024, .n_compartments = systemObj->n_compartments, .n_targets = siteObj->n_targets};
     Transition *transition = &tmp;
     
     int c, s, i;
@@ -683,12 +683,13 @@ static PyObject *
 System_show_transition(SystemObject *self, PyObject *args, PyObject *kwds)
 {
     PyObject *siteObj;
+    double t;
     
     static char *kwlist[] = {"site", NULL};
-    if (!PyArg_ParseTupleAndKeywords(args, kwds, "|O!", kwlist, &SiteType, &siteObj))
+    if (!PyArg_ParseTupleAndKeywords(args, kwds, "|O!d", kwlist, &SiteType, &siteObj, &t))
         Py_RETURN_NONE;
     
-    Transition *transition = Transition_create(self, siteObj);
+    Transition *transition = Transition_create(self, siteObj, t);
     Transition_print(transition);
     
     Py_RETURN_NONE;
