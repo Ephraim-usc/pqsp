@@ -55,7 +55,7 @@ Array2PyList_DOUBLE(double *array, int len)
 
 
 /******************************************************************************
-                     the Transition type declarations
+                     type declarations
 ******************************************************************************/
 
 typedef struct {
@@ -69,11 +69,120 @@ typedef struct {
     double ***Pses; // list of P matrices, for each state, for each compartment
 } Transition;
 
+typedef struct {
+    PyObject_HEAD
+
+    /* fixed attributes */
+    int __max_states__;
+    int n_targets; // number of targets
+    int *targets; // list of targets
+    double **onses; // list of lists of on rates, for each state
+    double **offses; // list of lists of off rates, for each state
+    
+    /* variable attributes */
+    int n_particles;
+    int *values; // list of indices of bound targets, instead of targets themselves, for faster transition application
+} SiteObject;
+
+typedef struct {
+    PyObject_HEAD
+    
+    /* fixed attributes */
+    int n_sites;
+    SiteObject **sites;
+    
+    /* variable attributes */
+    double mpp; // mole per particle
+    long n_particles;
+    int *compartments; // list of compartments for each particle
+    int *states; // list of states for each particle
+} LigandObject;
+
+typedef struct {
+    PyObject_HEAD
+
+    /* fixed attributes */
+    int n_compartments; // number of compartments
+    int n_analytes; // number of analytes
+    int __max_ligands__;
+    
+    /* variable attributes */
+    double **xses; // list of lists of analyte concentrations, for each compartment
+    int n_ligands;
+    LigandObject **ligands;
+} SystemObject;
+
+
+
+/******************************************************************************
+               Transition functions (temperarily put here)
+******************************************************************************/
+
 static Transition *
-Transition_create(SystemObject *systemObj, SiteObject *siteObj, double t);
+Transition_create(SystemObject *systemObj, SiteObject *siteObj, double t)
+{
+    Transition tmp = {.__max_states__ = 1024, .n_compartments = systemObj->compartments, .n_targets = siteObj->n_targets};
+    Transition *transition = &tmp;
+    
+    int c, s, i;
+    double *ons, *offs, *xs, *Q;
+    
+    for (c = 0; c < systemObj->n_compartments; c++)
+    {
+        xs = systemObj->xses[c];
+        for(s = 0; s < siteObj->__max_states__; s++)
+            if(siteObj->onses[s])
+            {
+                ons = siteObj->onses[s];
+                offs = siteObj->offses[s];
+                Q = transition->Qses[c][s];
+                
+                Q[0] = 0.0;
+                for (i = 0; i < siteObj->n_targets; i++)
+                {
+                    Q[0] -= ons[i] * xs[i] * t;
+                    Q[i + 1] = ons[i] * xs[i] * t;
+                }
+                for (i = 0; i < siteObj->n_targets; i++)
+                {
+                    Q[(siteObj->n_targets + 1) * (i + 1)] = offs[i] * t;
+                    Q[(siteObj->n_targets + 2) * (i + 1)] = - offs[i] * t;
+                }
+                
+                free(transition->Pses[c][s]);
+                transition->Pses[c][s] = r8mat_expm1(siteObj->n_targets + 1, Q);
+            }
+    }
+    return transition;
+}
 
 static int
-Transition_print(Transition *transition);
+Transition_print(Transition *transition)
+{   
+    int c, s, i;
+    double *Q, *P;
+    
+    for (c = 0; c < transition->n_compartments; c++)
+    {
+        for(s = 0; s < transition->__max_states__; s++)
+            if(transition->Qses[c][s])
+            {
+                Q = transition->Qses[c][s];
+                P = transition->Pses[c][s];
+                
+                printf("[compartment %d, state %d]\n", c, s);
+                printf("[Q] ");
+                for (i = 0; i < transition->n_targets; i++)
+                    printf("%f ", Q[i]);
+                printf("\n");
+                printf("[P] ");
+                for (i = 0; i < transition->n_targets; i++)
+                    printf("%f ", P[i]);
+                printf("\n");
+            }
+    }
+    return 0;
+}
 
 
 /******************************************************************************
@@ -101,21 +210,6 @@ typedef struct {
 /******************************************************************************
                                 the Site type
 ******************************************************************************/
-
-typedef struct {
-    PyObject_HEAD
-
-    /* fixed attributes */
-    int __max_states__;
-    int n_targets; // number of targets
-    int *targets; // list of targets
-    double **onses; // list of lists of on rates, for each state
-    double **offses; // list of lists of off rates, for each state
-    
-    /* variable attributes */
-    int n_particles;
-    int *values; // list of indices of bound targets, instead of targets themselves, for faster transition application
-} SiteObject;
 
 static void
 Site_dealloc(SiteObject *self)
@@ -314,20 +408,6 @@ static PyTypeObject SiteType = {
                                 the Ligand type
 ******************************************************************************/
 
-typedef struct {
-    PyObject_HEAD
-    
-    /* fixed attributes */
-    int n_sites;
-    SiteObject **sites;
-    
-    /* variable attributes */
-    double mpp; // mole per particle
-    long n_particles;
-    int *compartments; // list of compartments for each particle
-    int *states; // list of states for each particle
-} LigandObject;
-
 static void
 Ligand_dealloc(LigandObject *self)
 {
@@ -486,20 +566,6 @@ static PyTypeObject LigandType = {
                                 the System type
 ******************************************************************************/
 
-typedef struct {
-    PyObject_HEAD
-
-    /* fixed attributes */
-    int n_compartments; // number of compartments
-    int n_analytes; // number of analytes
-    int __max_ligands__;
-    
-    /* variable attributes */
-    double **xses; // list of lists of analyte concentrations, for each compartment
-    int n_ligands;
-    LigandObject **ligands;
-} SystemObject;
-
 static void
 System_dealloc(SystemObject *self)
 {
@@ -649,78 +715,6 @@ static PyTypeObject SystemType = {
     .tp_dealloc = (destructor) System_dealloc,
     .tp_getset = System_getsetters,
 };
-
-
-
-/******************************************************************************
-               Transition functions (temperarily put here)
-******************************************************************************/
-
-static Transition *
-Transition_create(SystemObject *systemObj, SiteObject *siteObj, double t)
-{
-    Transition tmp = {.__max_states__ = 1024, .n_compartments = systemObj->compartments, .n_targets = siteObj->n_targets};
-    Transition *transition = &tmp;
-    
-    int c, s, i;
-    double *ons, *offs, *xs, *Q;
-    
-    for (c = 0; c < systemObj->n_compartments; c++)
-    {
-        xs = systemObj->xses[c];
-        for(s = 0; s < siteObj->__max_states__; s++)
-            if(siteObj->onses[s])
-            {
-                ons = siteObj->onses[s];
-                offs = siteObj->offses[s];
-                Q = transition->Qses[c][s];
-                
-                Q[0] = 0.0;
-                for (i = 0; i < siteObj->n_targets; i++)
-                {
-                    Q[0] -= ons[i] * xs[i] * t;
-                    Q[i + 1] = ons[i] * xs[i] * t;
-                }
-                for (i = 0; i < siteObj->n_targets; i++)
-                {
-                    Q[(siteObj->n_targets + 1) * (i + 1)] = offs[i] * t;
-                    Q[(siteObj->n_targets + 2) * (i + 1)] = - offs[i] * t;
-                }
-                
-                free(transition->Pses[c][s]);
-                transition->Pses[c][s] = r8mat_expm1(siteObj->n_targets + 1, Q);
-            }
-    }
-    return transition;
-}
-
-static int
-Transition_print(Transition *transition)
-{   
-    int c, s, i;
-    double *Q, *P;
-    
-    for (c = 0; c < transition->n_compartments; c++)
-    {
-        for(s = 0; s < transition->__max_states__; s++)
-            if(transition->Qses[c][s])
-            {
-                Q = transition->Qses[c][s];
-                P = transition->Pses[c][s];
-                
-                printf("[compartment %d, state %d]\n", c, s);
-                printf("[Q] ");
-                for (i = 0; i < transition->n_targets; i++)
-                    printf("%f ", Q[i]);
-                printf("\n");
-                printf("[P] ");
-                for (i = 0; i < transition->n_targets; i++)
-                    printf("%f ", P[i]);
-                printf("\n");
-            }
-    }
-    return 0;
-}
 
 
 /******************************************************************************
