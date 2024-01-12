@@ -9,6 +9,10 @@
 #include <stdint.h>
 
 
+/******************************************************************************
+                          utility functions
+******************************************************************************/
+
 static int *
 PyList2Array_INT(PyObject *listObj)
 {
@@ -113,9 +117,8 @@ typedef struct {
 } SystemObject;
 
 
-
 /******************************************************************************
-               Transition functions (temperarily put here)
+                           Transition functions
 ******************************************************************************/
 
 static Transition *
@@ -188,6 +191,58 @@ Transition_print(Transition *transition)
                 printf("\n");
             }
     }
+    return 0;
+}
+
+static int 
+_Transition_apply(Transition *transition, int n_particles, int *compartments, int *states, int *values, int *deltas)
+{
+    int p, x, x_;
+    double *P;
+    double tmp;
+    
+    for (p = 0; p < n_particles; p++)
+    {
+        x = values[p];
+        if (self->Pses[compartments[p]][states[p]])
+            P = self->Pses[compartments[p]][states[p]] + x * (self->n_targets + 1); // transition matrix + shift for starting state x = transition vector for x
+        else
+            P = self->Pses[compartments[p]][0] + x * (self->n_targets + 1);
+        
+        tmp = drand48();
+        for (x_ = 0; tmp -= P[x_], tmp > 0; x_++);
+        
+        deltas[x] -= 1;
+        deltas[x_] += 1;
+        values[p] = x_;
+    }
+    
+    return 0;
+}
+
+static int 
+_Transition_apply(Transition *transition, SystemObject *systemObj, SiteObject *siteObj)
+{
+    int p, x, x_;
+    double *P;
+    double tmp;
+    
+    for (p = 0; p < siteObj->n_particles; p++)
+    {
+        x = values[p];
+        if (self->Pses[compartments[p]][states[p]])
+            P = self->Pses[compartments[p]][states[p]] + x * (self->n_targets + 1); // transition matrix + shift for starting state x = transition vector for x
+        else
+            P = self->Pses[compartments[p]][0] + x * (self->n_targets + 1);
+        
+        tmp = drand48();
+        for (x_ = 0; tmp -= P[x_], tmp > 0; x_++);
+        
+        deltas[x] -= 1;
+        deltas[x_] += 1;
+        values[p] = x_;
+    }
+    
     return 0;
 }
 
