@@ -194,6 +194,23 @@ Transition_print(Transition *transition)
     return 0;
 }
 
+static int
+Transition_apply(Transition *transition, int compartment, int state, int value)
+{
+    int value_;
+    
+    double *P;
+    if (transition->Pses[compartment][state])
+        P = transition->Pses[compartment][state] + x * (transition->n_targets + 1); // transition matrix + shift for starting state x = transition vector for x
+    else
+        P = transition->Pses[compartment][0] + x * (transition->n_targets + 1);
+    
+    tmp = drand48();
+    for (value_ = 0; tmp -= P[x_], tmp > 0; value_++);
+    
+    return value_;
+}
+
 /*
 static int 
 _Transition_apply(Transition *transition, int n_particles, int *compartments, int *states, int *values, int *deltas)
@@ -222,28 +239,35 @@ _Transition_apply(Transition *transition, int n_particles, int *compartments, in
 }
 
 static int 
-_Transition_apply(Transition *transition, SystemObject *systemObj, SiteObject *siteObj)
+_Transition_apply(Transition *transition, SystemObject *systemObj, LigandObject *ligandObj, SiteObject *siteObj, double t)
 {
-    int p, x, x_;
+    SiteObject *siteObj;
+    
+    int *compartments = ligandObj->compartments;
+    int *states = ligandObj->states;
+    
+    int st, p, value, value_;
     double *P;
     double tmp;
     
-    for (p = 0; p < siteObj->n_particles; p++)
-    {
-        x = values[p];
-        if (self->Pses[compartments[p]][states[p]])
-            P = self->Pses[compartments[p]][states[p]] + x * (self->n_targets + 1); // transition matrix + shift for starting state x = transition vector for x
-        else
-            P = self->Pses[compartments[p]][0] + x * (self->n_targets + 1);
-        
-        tmp = drand48();
-        for (x_ = 0; tmp -= P[x_], tmp > 0; x_++);
-        
-        deltas[x] -= 1;
-        deltas[x_] += 1;
-        values[p] = x_;
-    }
+    int *deltas;
     
+    for (st = 0; st < ligandObj->n_sites; st++)
+    {
+        siteObj = ligandObj->sites[st];
+        Transition *transition = Transition_new(systemObj, siteObj, t);
+        values = siteObj->values;
+        
+        for (p = 0; p < siteObj->n_particles; p++)
+        {
+            value = values[p];
+            value_ = Transition_get_P(transition, compartments[p], states[p], value);
+
+            values[p] = value_;
+            deltas[value] -= 1;
+            deltas[value_] += 1;
+        }
+    }
     return 0;
 }
 */
