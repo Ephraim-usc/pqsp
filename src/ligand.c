@@ -685,7 +685,7 @@ System_show_transition(SystemObject *self, PyObject *args, PyObject *kwds)
     PyObject *siteObj;
     double t;
     
-    static char *kwlist[] = {"site", NULL};
+    static char *kwlist[] = {"site", "t", NULL};
     if (!PyArg_ParseTupleAndKeywords(args, kwds, "|O!d", kwlist, &SiteType, &siteObj, &t))
         Py_RETURN_NONE;
     
