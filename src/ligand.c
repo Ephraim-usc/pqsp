@@ -70,208 +70,6 @@ typedef struct {
 } Transition;
 
 
-/******************************************************************************
-                                the Transition type
-******************************************************************************/
-
-typedef struct {
-    PyObject_HEAD
-    
-    /* fixed attributes */
-    int __max_states__;
-    int n_compartments; // number of compartments
-    int n_targets; // number of targets
-    int *targets;
-    
-    /* variable attributes */
-    double ***Pses; // list of P matrices, for each state, for each compartment
-} TransitionObject;
-
-static void
-Transition_dealloc(TransitionObject *self)
-{
-    int c, s;
-    free(self->targets);
-    for (c = 0; c < self->n_compartments; c++)
-    {
-        for (s = 0; s < self->__max_states__; s++)
-            if (self->Pses[c][s])
-                free(self->Pses[c][s]);
-        free(self->Pses[c]);
-    }
-    Py_TYPE(self)->tp_free((PyObject *) self);
-}
-
-static PyObject *
-Transition_new(PyTypeObject *type, PyObject *args, PyObject *kwds)
-{
-    TransitionObject *self;
-    self = (TransitionObject *) type->tp_alloc(type, 0);
-    if (self != NULL)
-    {
-        self->__max_states__ = 0;
-        self->n_compartments = 0;
-        self->n_targets = 0;
-        self->targets = NULL;
-        self->Pses = NULL;
-    }
-    return (PyObject *) self;
-}
-
-static int
-Transition_init(TransitionObject *self, PyObject *args, PyObject *kwds)
-{
-    PyObject *targetsObj;
-    int c, i;
-    
-    static char *kwlist[] = {"n_compartments", "targets", NULL};
-    if (!PyArg_ParseTupleAndKeywords(args, kwds, "|iO!", kwlist, &self->n_compartments, &PyList_Type, &targetsObj))
-        return -1;
-    
-    self->n_targets = (int) PyList_Size(targetsObj);
-    self->targets = calloc(self->n_targets, sizeof(int));
-    for (i = 0; i < self->n_targets; i++)
-        self->targets[i] = (int) PyLong_AsLong(PyList_GetItem(targetsObj, i));
-    
-    self->Pses = calloc(self->n_compartments, sizeof(double **));
-    for (c = 0; c < self->n_compartments; c++)
-        self->Pses[c] = calloc(self->__max_states__, sizeof(double *));
-    
-    return 0;
-}
-
-static PyMemberDef Transition_members[] = {
-    {"n_compartments", T_INT, offsetof(TransitionObject, n_compartments), READONLY, "number of compartments"},
-    {"n_targets", T_INT, offsetof(TransitionObject, n_targets), READONLY, "number of targets"},
-    {NULL}  /* Sentinel */
-};
-
-
-static PyObject *
-Transition_print(TransitionObject *self, PyObject *Py_UNUSED(ignored))
-{
-    int c, s, i;
-    
-    printf("targets:\n");
-    for (i = 0; i < self->n_targets; i++)
-        printf("%d ", self->targets[i]);
-    printf("\n\n");
-    
-    printf("P matrices:\n");
-    for (c = 0; c < self->n_compartments; c++)
-    {
-        for (s = 0; s < self->__max_states__; s++)
-        if (self->Pses[c][s])
-        {
-            printf("[compartment %d, state %d] ", c, s);
-            for (i = 0; i < (self->n_targets + 1) * (self->n_targets + 1); i++)
-                printf("%f ", self->Pses[c][s][i]);
-            printf("\n");
-        }
-    }
-    printf("\n");
-    
-    Py_RETURN_NONE;
-}
-
-static PyObject *
-Transition_set_P(TransitionObject *self, PyObject *args, PyObject *kwds)
-{
-    PyObject *PObj;
-    int c, s, i;
-    
-    static char *kwlist[] = {"compartment", "state", "P", NULL};
-    if (!PyArg_ParseTupleAndKeywords(args, kwds, "|iiO!", kwlist, &c, &s, &PyList_Type, &PObj))
-        Py_RETURN_NONE;
-    
-    if (!self->Pses[c][s])
-        self->Pses[c][s] = calloc((self->n_targets + 1) * (self->n_targets + 1), sizeof(double));
-    for (i = 0; i < (self->n_targets + 1) * (self->n_targets + 1); i++)
-        self->Pses[c][s][i] = (double) PyFloat_AsDouble(PyList_GetItem(PObj, i));
-    
-    Py_RETURN_NONE;
-}
-
-static int 
-_Transition_apply(TransitionObject *self, int n_particles, int *compartments, int *states, int *values, int *deltas) // values are indices of bound targets, not bound targets themselves
-{
-    int p, x, x_;
-    double *P;
-    double tmp;
-    
-    for (p = 0; p < n_particles; p++)
-    {
-        x = values[p];
-        if (self->Pses[compartments[p]][states[p]])
-            P = self->Pses[compartments[p]][states[p]] + x * (self->n_targets + 1); // transition matrix + shift for starting state x = transition vector for x
-        else
-            P = self->Pses[compartments[p]][0] + x * (self->n_targets + 1);
-        
-        tmp = drand48();
-        x_ = 0;
-        for (x_ = 0; tmp -= P[x_], tmp > 0; x_++);
-        
-        deltas[x] -= 1;
-        deltas[x_] += 1;
-        values[p] = x_;
-    }
-    
-    return 0;
-}
-
-static PyObject *
-Transition_apply(TransitionObject *self, PyObject *args, PyObject *kwds)
-{
-    PyObject *compartmentsObj, *statesObj, *valuesObj, *deltasObj;
-    int n_particles;
-    int *compartments, *states, *values, *deltas;
-    
-    static char *kwlist[] = {"compartments", "states", "values", "deltas", NULL};
-    if (!PyArg_ParseTupleAndKeywords(args, kwds, "|O!O!O!O!", kwlist, &PyList_Type, &compartmentsObj, &PyList_Type, &statesObj, &PyList_Type, &valuesObj, &PyList_Type, &deltasObj))
-        Py_RETURN_NONE;
-    
-    n_particles = (int) PyList_Size(valuesObj);
-    
-    compartments = PyList2Array_INT(compartmentsObj);
-    states = PyList2Array_INT(statesObj);
-    values = PyList2Array_INT(valuesObj);
-    deltas = PyList2Array_INT(deltasObj);
-    
-    _Transition_apply(self, n_particles, compartments, states, values, deltas);
-    
-    valuesObj = Array2PyList_INT(values, n_particles);
-    deltasObj = Array2PyList_INT(deltas, self->n_targets + 1);
-    
-    free(compartments);
-    free(states);
-    free(values);
-    free(deltas);
-    
-    return Py_NewRef(Py_BuildValue("(OO)", valuesObj, deltasObj));
-}
-
-static PyMethodDef Transition_methods[] = {
-    {"print", (PyCFunction) Transition_print, METH_NOARGS, "print"},
-    {"set_P", (PyCFunction) Transition_set_P, METH_VARARGS | METH_KEYWORDS, "set P matrix for a given compartment for a given state"},
-    {"apply", (PyCFunction) Transition_apply, METH_VARARGS | METH_KEYWORDS, "apply Transition to particles"},
-    {NULL}  /* Sentinel */
-};
-
-static PyTypeObject TransitionType = {
-    .ob_base = PyVarObject_HEAD_INIT(NULL, 0)
-    .tp_name = "ligand.Transition",
-    .tp_doc = PyDoc_STR("Transition objects"),
-    .tp_basicsize = sizeof(TransitionObject),
-    .tp_itemsize = 0,
-    .tp_flags = Py_TPFLAGS_DEFAULT,
-    .tp_new = Transition_new,
-    .tp_init = (initproc) Transition_init,
-    .tp_members = Transition_members,
-    .tp_methods = Transition_methods,
-    .tp_dealloc = (destructor) Transition_dealloc,
-};
-
-
 
 /******************************************************************************
                                 the Dict type
@@ -680,6 +478,77 @@ static PyTypeObject LigandType = {
 
 
 /******************************************************************************
+               Transition functions (temperarily put here)
+******************************************************************************/
+
+static Transition *
+Transition_create(SystemObject *systemObj, SiteObject *siteObj, double t)
+{
+    Transition tmp = {.__max_states__ = 1024, .n_compartments = systemObj->compartments, .n_targets = siteObj->n_targets};
+    Transition *transition = &tmp;
+    
+    int c, s, i;
+    double *ons, *offs, *xs, *Q;
+    
+    for (c = 0; c < systemObj->n_compartments; c++)
+    {
+        xs = systemObj->xses[c];
+        for(s = 0; s < siteObj->__max_states__; s++)
+            if(siteObj->onses[s])
+            {
+                ons = siteObj->onses[s];
+                offs = siteObj->offses[s];
+                Q = transition->Qses[c][s];
+                
+                Q[0] = 0.0;
+                for (i = 0; i < siteObj->n_targets; i++)
+                {
+                    Q[0] -= ons[i] * xs[i] * t;
+                    Q[i + 1] = ons[i] * xs[i] * t;
+                }
+                for (i = 0; i < siteObj->n_targets; i++)
+                {
+                    Q[(siteObj->n_targets + 1) * (i + 1)] = offs[i] * t;
+                    Q[(siteObj->n_targets + 2) * (i + 1)] = - offs[i] * t;
+                }
+                
+                free(transition->Pses[c][s]);
+                transition->Pses[c][s] = r8mat_expm1(siteObj->n_targets + 1, Q);
+            }
+    }
+    return transition;
+}
+
+static int
+Transition_print(Transition *transition)
+{   
+    int c, s, i;
+    double *ons, *offs, *Q, *P;
+    
+    for (c = 0; c < transition->n_compartments; c++)
+    {
+        for(s = 0; s < transition->__max_states__; s++)
+            if(transition->Qses[c][s])
+            {
+                Q = transition->Qses[c][s];
+                P = transition->Pses[c][s];
+                
+                printf("[compartment %d, state %d]\n", c, s);
+                printf("[Q] ");
+                for (i = 0; i < transition->n_targets; i++)
+                    printf("%f ", Q[i]);
+                printf("\n");
+                printf("[P] ");
+                for (i = 0; i < transition->n_targets; i++)
+                    printf("%f ", P[i]);
+                printf("\n");
+            }
+    }
+    return 0;
+}
+
+
+/******************************************************************************
                                 the System type
 ******************************************************************************/
 
@@ -848,78 +717,6 @@ static PyTypeObject SystemType = {
 };
 
 
-
-/******************************************************************************
-               Transition functions (temperarily put here)
-******************************************************************************/
-
-static Transition *
-Transition_create(SystemObject *systemObj, SiteObject *siteObj, double t)
-{
-    Transition tmp = {.__max_states__ = 1024, .n_compartments = systemObj->compartments, .n_targets = siteObj->n_targets};
-    Transition *transition = &tmp;
-    
-    int c, s, i;
-    double *ons, *offs, *xs, *Q;
-    
-    for (c = 0; c < systemObj->n_compartments; c++)
-    {
-        xs = systemObj->xses[c];
-        for(s = 0; s < siteObj->__max_states__; s++)
-            if(siteObj->onses[s])
-            {
-                ons = siteObj->onses[s];
-                offs = siteObj->offses[s];
-                Q = transition->Qses[c][s];
-                
-                Q[0] = 0.0;
-                for (i = 0; i < siteObj->n_targets; i++)
-                {
-                    Q[0] -= ons[i] * xs[i] * t;
-                    Q[i + 1] = ons[i] * xs[i] * t;
-                }
-                for (i = 0; i < siteObj->n_targets; i++)
-                {
-                    Q[(siteObj->n_targets + 1) * (i + 1)] = offs[i] * t;
-                    Q[(siteObj->n_targets + 2) * (i + 1)] = - offs[i] * t;
-                }
-                
-                free(transition->Pses[c][s]);
-                transition->Pses[c][s] = r8mat_expm1(siteObj->n_targets + 1, Q);
-            }
-    }
-    return transition;
-}
-
-static int
-Transition_print(Transition *transition)
-{   
-    int c, s, i;
-    double *ons, *offs, *Q, *P;
-    
-    for (c = 0; c < transition->n_compartments; c++)
-    {
-        for(s = 0; s < transition->__max_states__; s++)
-            if(transition->Qses[c][s])
-            {
-                Q = transition->Qses[c][s];
-                P = transition->Pses[c][s];
-                
-                printf("[compartment %d, state %d]\n", c, s);
-                printf("[Q] ");
-                for (i = 0; i < transition->n_targets; i++)
-                    printf("%f ", Q[i]);
-                printf("\n");
-                printf("[P] ");
-                for (i = 0; i < transition->n_targets; i++)
-                    printf("%f ", P[i]);
-                printf("\n");
-            }
-    }
-    return 0;
-}
-
-
 /******************************************************************************
                                 the module
 ******************************************************************************/
@@ -935,8 +732,6 @@ PyMODINIT_FUNC
 PyInit_ligand(void)
 {
     PyObject *m;
-    if (PyType_Ready(&TransitionType) < 0)
-        return NULL;
     if (PyType_Ready(&SiteType) < 0)
         return NULL;
     if (PyType_Ready(&LigandType) < 0)
@@ -947,13 +742,6 @@ PyInit_ligand(void)
     m = PyModule_Create(&ligandmodule);
     if (m == NULL)
         return NULL;
-
-    Py_INCREF(&TransitionType);
-    if (PyModule_AddObject(m, "Transition", (PyObject *) &TransitionType) < 0) {
-        Py_DECREF(&TransitionType);
-        Py_DECREF(m);
-        return NULL;
-    }
     
     Py_INCREF(&SiteType);
     if (PyModule_AddObject(m, "Site", (PyObject *) &SiteType) < 0) {
