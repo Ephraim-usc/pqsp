@@ -126,7 +126,8 @@ Transition_create(SystemObject *systemObj, SiteObject *siteObj, double t)
     
     int c, s, i;
     double *ons, *offs, *xs, *Q;
-    
+
+    /*
     for (c = 0; c < systemObj->n_compartments; c++)
     {
         xs = systemObj->xses[c];
@@ -153,6 +154,7 @@ Transition_create(SystemObject *systemObj, SiteObject *siteObj, double t)
                 transition->Pses[c][s] = r8mat_expm1(siteObj->n_targets + 1, Q);
             }
     }
+    */
     return transition;
 }
 
