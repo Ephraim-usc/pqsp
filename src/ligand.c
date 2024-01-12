@@ -690,7 +690,7 @@ System_show_transition(SystemObject *self, PyObject *args, PyObject *kwds)
         Py_RETURN_NONE;
     
     Transition *transition = Transition_create(self, siteObj, t);
-    #Transition_print(transition);
+    //Transition_print(transition);
     
     Py_RETURN_NONE;
 }
