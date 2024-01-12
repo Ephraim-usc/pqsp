@@ -69,9 +69,11 @@ typedef struct {
     double ***Pses; // list of P matrices, for each state, for each compartment
 } Transition;
 
-static int
-Transition_compute_Ps(Transition *transition, SystemObject *systemObj, SiteObject *siteObj, double t)
+static Transition *
+Transition_create(SystemObject *systemObj, SiteObject *siteObj, double t)
 {
+    Transition *transition = &{.__max_states__ = 1024, .n_compartments = systemObj->compartments, .n_targets = siteObj->n_targets};
+    
     int c, s, i;
     double *ons, *offs, *Q;
     
@@ -100,7 +102,34 @@ Transition_compute_Ps(Transition *transition, SystemObject *systemObj, SiteObjec
                 transition->Pses[c][s] = r8mat_expm1(siteObj->n_targets + 1, Q);
             }
     }
+    return transition;
+}
+
+static int
+Transition_print(Transition *transition)
+{   
+    int c, s, i;
+    double *ons, *offs, *Q;
     
+    for (c = 0; c < transition->n_compartments; c++)
+    {
+        for(s = 0; s < transition->__max_states__; s++)
+            if(transition->Qses[c][s])
+            {
+                Q = transition->Qses[c][s];
+                P = transition->Pses[c][s];
+                
+                printf("[compartment %d, state %d]\n", c, s);
+                printf("[Q] ");
+                for (i = 0; i < transition->n_targets; i++)
+                    printf("%f ", Q[i]);
+                printf("\n");
+                printf("[P] ");
+                for (i = 0; i < transition->n_targets; i++)
+                    printf("%f ", P[i]);
+                printf("\n");
+            }
+    }
     return 0;
 }
 
@@ -845,6 +874,20 @@ System_add_ligand(SystemObject *self, PyObject *args, PyObject *kwds)
     Py_RETURN_NONE;
 }
 
+static PyObject *
+System_show_transition(SystemObject *self, PyObject *args, PyObject *kwds)
+{
+    PyObject *siteObj;
+    
+    static char *kwlist[] = {"site", NULL};
+    if (!PyArg_ParseTupleAndKeywords(args, kwds, "|O!", kwlist, &SiteType, &siteObj))
+        Py_RETURN_NONE;
+    
+    Transition *transition = Transition_create(self, siteObj);
+    Transition_print(transition);
+    
+    Py_RETURN_NONE;
+}
 
 static PyMethodDef System_methods[] = {
     {"add_x", (PyCFunction) System_add_x, METH_VARARGS | METH_KEYWORDS, "add analyte"},
