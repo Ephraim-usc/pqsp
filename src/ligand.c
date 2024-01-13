@@ -171,6 +171,7 @@ Transition_create(SystemObject *systemObj, SiteObject *siteObj, double t)
 static int
 Transition_free(Transition *transition)
 {
+    int c, s;
     for (c = 0; c < transition->n_compartments; c++)
     {
         for(s = 0; s < transition->__max_states__; s++)
@@ -220,15 +221,16 @@ static int
 Transition_apply(Transition *transition, int compartment, int state, int value)
 {
     int value_;
+    double tmp;
     
     double *P;
     if (transition->Pses[compartment][state])
-        P = transition->Pses[compartment][state] + x * (transition->n_targets + 1); // transition matrix + shift for starting state x = transition vector for x
+        P = transition->Pses[compartment][state] + value * (transition->n_targets + 1); // transition matrix + shift for starting state x = transition vector for x
     else
-        P = transition->Pses[compartment][0] + x * (transition->n_targets + 1);
+        P = transition->Pses[compartment][0] + value * (transition->n_targets + 1);
     
     tmp = drand48();
-    for (value_ = 0; tmp -= P[x_], tmp > 0; value_++);
+    for (value_ = 0; tmp -= P[value_], tmp > 0; value_++);
     
     return value_;
 }
