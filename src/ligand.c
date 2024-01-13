@@ -503,10 +503,7 @@ Ligand_getsites(LigandObject *self, void *closure)
 static PyObject *
 Ligand_getcompartments(LigandObject *self, void *closure)
 {
-    int i;
-    PyObject *compartmentsObj = PyList_New(self->n_particles);
-    for (i = 0; i < self->n_particles; i++)
-        PyList_SetItem(compartmentsObj, i, (PyObject *) Py_BuildValue("i", self->compartments[i]));
+    PyObject *compartmentsObj = Array2PyList_INT(self->compartments, self->n_particles);
     return Py_NewRef(compartmentsObj);
 }
 
@@ -522,7 +519,7 @@ Ligand_getstates(LigandObject *self, void *closure)
 
 static PyGetSetDef Ligand_getsetters[] = {
     {"sites", (getter) Ligand_getsites, NULL, "binding sites", NULL},
-    {"compartments", (getter) Ligand_getstates, NULL, "list of compartments for each particle", NULL},
+    {"compartments", (getter) Ligand_getcompartments, NULL, "list of compartments for each particle", NULL},
     {"states", (getter) Ligand_getstates, NULL, "list of states, for each particle", NULL},
     {NULL}  /* Sentinel */
 };
