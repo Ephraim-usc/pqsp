@@ -763,7 +763,7 @@ System_interact(SystemObject *self, PyObject *args, PyObject *kwds)
     for (c = 0; c < self->n_compartments; c++)
     {
         for (a = 0; a < self->n_analytes + 1; a++)
-            printf("%d ", deltas[c][a]);
+            printf("%f ", (double) deltas[c][a]);
         printf("\n");
     }
     
