@@ -733,7 +733,7 @@ System_add_ligand(SystemObject *self, PyObject *args, PyObject *kwds)
 static PyObject *
 System_interact(SystemObject *self, PyObject *args, PyObject *kwds)
 {
-    PyObject *ligandObj;
+    Ligand *ligandObj;
     double t;
     
     static char *kwlist[] = {"ligand", "t", NULL};
@@ -746,7 +746,7 @@ System_interact(SystemObject *self, PyObject *args, PyObject *kwds)
     SiteObject *siteObj;
     Transition *transition;
     int st, p, value, value_;
-    double *P;
+    double *P, *values;
     
     for (st = 0; st < ligandObj->n_sites; st++)
     {
