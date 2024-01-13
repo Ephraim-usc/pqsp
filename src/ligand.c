@@ -66,7 +66,6 @@ typedef struct {
     /* fixed attributes */
     int __max_states__;
     int n_compartments; // number of compartments
-    double *volumes; // list of volumes for each compartment
     int n_targets; // number of targets
     
     /* variable attributes */
@@ -108,6 +107,7 @@ typedef struct {
 
     /* fixed attributes */
     int n_compartments; // number of compartments
+    double *volumes; // list of volumes for each compartment
     int n_analytes; // number of analytes
     int __max_ligands__;
     
