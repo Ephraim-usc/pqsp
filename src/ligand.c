@@ -653,7 +653,7 @@ static PyMemberDef System_members[] = {
 static PyObject *
 System_getvolumes(SystemObject *self, void *closure)
 {
-    PyObject *volumesObj = Array2PyList_DOUBLE(self->volumes);
+    PyObject *volumesObj = Array2PyList_DOUBLE(self->volumes, self->n_compartments);
     return Py_NewRef(volumesObj);
 }
 
