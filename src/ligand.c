@@ -733,7 +733,7 @@ System_add_ligand(SystemObject *self, PyObject *args, PyObject *kwds)
 static PyObject *
 System_interact(SystemObject *self, PyObject *args, PyObject *kwds)
 {
-    Ligand *ligandObj;
+    LigandObject *ligandObj;
     double t;
     
     static char *kwlist[] = {"ligand", "t", NULL};
