@@ -238,7 +238,7 @@ Transition_apply(Transition *transition, int compartment, int state, int value)
 
 
 /******************************************************************************
-                                the Dict type
+                                the Tree type
 ******************************************************************************/
 
 
@@ -246,6 +246,14 @@ typedef struct Node {
     struct Node **children;
     int value;
 } Node;
+
+static Node *
+Node_new(int value)
+{
+    Node *node = (Node *)malloc(sizeof(Node));
+    node->value = value;
+    return node;
+}
 
 typedef struct {
     PyObject_HEAD
@@ -255,8 +263,52 @@ typedef struct {
     Node *root;
     
     /* variable attributes */
-} DictObject;
+} Tree;
 
+static Tree *
+Tree_new(int n)
+{
+    Tree *tree = (Tree *)malloc(sizeof(Tree));
+    tree->n = n;
+    tree->root = Node_new(-1);
+    return tree;
+}
+
+static int
+Tree_set(Tree *tree, int len, int *keys, int value)
+{
+    int i;
+    Node *node = tree->root;
+    
+    for (i = 0; i < len; i++)
+    {
+        if (!node->children)
+            node->children = calloc(tree->n, sizeof(Node *));
+        node->children[keys[i]] = Node_new(-1);
+        node = node->children[keys[i]];
+    }
+    node->value = value;
+    
+    return 0;
+}
+
+static int
+Tree_print(Tree *tree)
+{
+    int i;
+    Node *node = tree->root;
+    
+    for (i = 0; i < len; i++)
+    {
+        if (!node->children)
+            node->children = calloc(tree->n, sizeof(Node *));
+        node->children[keys[i]] = Node_new(-1);
+        node = node->children[keys[i]];
+    }
+    node->value = value;
+    
+    return 0;
+}
 
 
 /******************************************************************************
