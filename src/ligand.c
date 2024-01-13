@@ -769,7 +769,8 @@ System_interact(SystemObject *self, PyObject *args, PyObject *kwds)
     
     for (c = 0; c < self->n_compartments; c++)
         for (a = 0; a < self->n_analytes; a++)
-            self->xses[c][a] = fmax(0.0, self->xses[c][a] - (double) deltas[c][a + 1] * ligandObj->mpp / self->volumes[c]);
+            self->xses[c][a] = fmax(0.0, self->xses[c][a] - 1.0);
+            //self->xses[c][a] = fmax(0.0, self->xses[c][a] - (double) deltas[c][a + 1] * ligandObj->mpp / self->volumes[c]);
     
     for (c = 0; c < self->n_compartments; c++)
         free(deltas[c]);
