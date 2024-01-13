@@ -124,8 +124,10 @@ typedef struct {
 static Transition *
 Transition_create(SystemObject *systemObj, SiteObject *siteObj, double t)
 {
-    Transition tmp = {.__max_states__ = 1024, .n_compartments = systemObj->n_compartments, .n_targets = siteObj->n_targets};
-    Transition *transition = &tmp;
+    Transition *transition = (Transition *)malloc(sizeof(Transition));
+    transition->__max_states__ = 1024;
+    transition->n_compartments = systemObj->n_compartments;
+    transition->n_targets = siteObj->n_targets;
     
     int c, s, i;
     double *ons, *offs, *xs, *Q;
@@ -164,6 +166,26 @@ Transition_create(SystemObject *systemObj, SiteObject *siteObj, double t)
             }
     }
     return transition;
+}
+
+static int
+Transition_free(Transition *transition)
+{
+    for (c = 0; c < transition->n_compartments; c++)
+    {
+        for(s = 0; s < transition->__max_states__; s++)
+            if (transition->Qses[c][s])
+            {
+              free(transition->Qses[c][s]);
+              free(transition->Pses[c][s]);
+            }
+        free(transition->Qses[c]);
+        free(transition->Pses[c]);
+    }
+    free(transition->Qses);
+    free(transition->Pses);
+    free(transition);
+    return 0;
 }
 
 static int
@@ -211,66 +233,6 @@ Transition_apply(Transition *transition, int compartment, int state, int value)
     return value_;
 }
 
-/*
-static int 
-_Transition_apply(Transition *transition, int n_particles, int *compartments, int *states, int *values, int *deltas)
-{
-    int p, x, x_;
-    double *P;
-    double tmp;
-    
-    for (p = 0; p < n_particles; p++)
-    {
-        x = values[p];
-        if (self->Pses[compartments[p]][states[p]])
-            P = self->Pses[compartments[p]][states[p]] + x * (self->n_targets + 1); // transition matrix + shift for starting state x = transition vector for x
-        else
-            P = self->Pses[compartments[p]][0] + x * (self->n_targets + 1);
-        
-        tmp = drand48();
-        for (x_ = 0; tmp -= P[x_], tmp > 0; x_++);
-        
-        deltas[x] -= 1;
-        deltas[x_] += 1;
-        values[p] = x_;
-    }
-    
-    return 0;
-}
-
-static int 
-_Transition_apply(Transition *transition, SystemObject *systemObj, LigandObject *ligandObj, SiteObject *siteObj, double t)
-{
-    SiteObject *siteObj;
-    
-    int *compartments = ligandObj->compartments;
-    int *states = ligandObj->states;
-    
-    int st, p, value, value_;
-    double *P;
-    double tmp;
-    
-    int *deltas;
-    
-    for (st = 0; st < ligandObj->n_sites; st++)
-    {
-        siteObj = ligandObj->sites[st];
-        Transition *transition = Transition_new(systemObj, siteObj, t);
-        values = siteObj->values;
-        
-        for (p = 0; p < siteObj->n_particles; p++)
-        {
-            value = values[p];
-            value_ = Transition_get_P(transition, compartments[p], states[p], value);
-
-            values[p] = value_;
-            deltas[value] -= 1;
-            deltas[value_] += 1;
-        }
-    }
-    return 0;
-}
-*/
 
 /******************************************************************************
                                 the Dict type
@@ -767,17 +729,41 @@ System_add_ligand(SystemObject *self, PyObject *args, PyObject *kwds)
 }
 
 static PyObject *
-System_show_transition(SystemObject *self, PyObject *args, PyObject *kwds)
+System_interact(SystemObject *self, PyObject *args, PyObject *kwds)
 {
-    PyObject *siteObj;
+    PyObject *ligandObj;
     double t;
     
-    static char *kwlist[] = {"site", "t", NULL};
-    if (!PyArg_ParseTupleAndKeywords(args, kwds, "|O!d", kwlist, &SiteType, &siteObj, &t))
+    static char *kwlist[] = {"ligand", "t", NULL};
+    if (!PyArg_ParseTupleAndKeywords(args, kwds, "|O!d", kwlist, &LigandType, &ligandObj, &t))
         Py_RETURN_NONE;
     
-    Transition *transition = Transition_create(self, siteObj, t);
-    Transition_print(transition);
+    int *compartments = ligandObj->compartments;
+    int *states = ligandObj->states;
+    
+    SiteObject *siteObj;
+    Transition *transition;
+    int st, p, value, value_;
+    double *P;
+    
+    for (st = 0; st < ligandObj->n_sites; st++)
+    {
+        siteObj = ligandObj->sites[st];
+        transition = Transition_create(self, siteObj, t);
+        values = siteObj->values;
+        
+        for (p = 0; p < siteObj->n_particles; p++)
+        {
+            value = values[p];
+            value_ = Transition_apply(transition, compartments[p], states[p], value);
+            
+            values[p] = value_;
+            //deltas[value] -= 1;
+            //deltas[value_] += 1;
+        }
+        
+        Transition_free(transition);
+    }
     
     Py_RETURN_NONE;
 }
