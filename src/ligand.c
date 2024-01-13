@@ -263,6 +263,7 @@ typedef struct {
     Node *root;
     
     /* variable attributes */
+    Node **searches;
 } Tree;
 
 static Tree *
@@ -293,7 +294,7 @@ Tree_set(Tree *tree, int len, int *keys, int value)
 }
 
 static int
-Tree_print(Tree *tree)
+Tree_query(Tree *tree, int len, int *keys)
 {
     int i;
     Node *node = tree->root;
