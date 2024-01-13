@@ -395,43 +395,24 @@ Site_set_state(SiteObject *self, PyObject *args, PyObject *kwds)
     Py_RETURN_NONE;
 }
 
-/*
-static PyObject *
-Site_compute_Ps(SiteObject *self, PyObject *args, PyObject *kwds)
+static int
+Site_add_particles(SiteObject *self, int n)
 {
-    PyObject *xsObj;
-    int state, i;
-    double t;
-    double *xs = calloc(self->n, sizeof(double));
-    double *Q = calloc((self->n + 1) * (self->n + 1), sizeof(double));
+    int n_particles_old;
+    int p;
+    int *values_old;
     
-    static char *kwlist[] = {"t", "xs", NULL};
-    if (!PyArg_ParseTupleAndKeywords(args, kwds, "|dO!", kwlist, &t, &PyList_Type, &xsObj))
-        Py_RETURN_NONE;
+    n_particles_old = self->n_particles;
+    values_old = self->values;
     
-    for (i = 0; i < self->n; i++)
-        xs[i] = (double) PyFloat_AsDouble(PyList_GetItem(xsObj, i));
+    self->n_particles += n;
+    self->values = calloc(self->n_particles, sizeof(int));
+    for(p = 0; p < n_particles_old; p++)
+        self->values[p] = values_old[p];
+    free(values_old);
     
-    for (state = 0; state < self->__max_states__; state++)
-        if (self->onses[state] != NULL)
-        {
-            Q[0] = 0.0;
-            for (i = 0; i < self->n; i++)
-            {
-                Q[0] -= self->onses[state][i] * xs[i] * t;
-                Q[i + 1] = self->onses[state][i] * xs[i] * t;
-            }
-            for (i = 0; i < self->n; i++)
-            {
-                Q[(self->n + 1) * (i + 1)] = self->offs[i] * t;
-                Q[(self->n + 2) * (i + 1)] = - self->offs[i] * t;
-            }
-            self->Ps[state] = r8mat_expm1(self->n + 1, Q);
-        }
-    
-    Py_RETURN_NONE;
+    return 0;
 }
-*/
 
 static PyMethodDef Site_methods[] = {
     {"print", (PyCFunction) Site_print, METH_NOARGS, "print the Site"},
@@ -585,8 +566,8 @@ Ligand_add_particles(LigandObject *self, PyObject *args, PyObject *kwds)
         self->states[p] = states_old[p];
     free(states_old);
     
-    //for(st = 0; st < self->n_sites; st++)
-    //    self->sites[st]._add_particles(n);
+    for(st = 0; st < self->n_sites; st++)
+        Site_add_particles(self->sites[st], n);
     
     Py_RETURN_NONE;
 }
