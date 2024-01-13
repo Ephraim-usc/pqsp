@@ -325,6 +325,19 @@ static PyMemberDef Site_members[] = {
 };
 
 static PyObject *
+Site_getvalues(SiteObject *self, void *closure)
+{
+    PyObject *valuesObj = Array2PyList_INT(self->values, self->n_particles);
+    return Py_NewRef(valuesObj);
+}
+
+static PyGetSetDef Site_getsetters[] = {
+    {"values", (getter) Site_getvalues, NULL, "list of values for each particle", NULL},
+    {NULL}  /* Sentinel */
+};
+
+
+static PyObject *
 Site_print(SiteObject *self, PyObject *Py_UNUSED(ignored))
 {
     int state, i;
@@ -355,19 +368,6 @@ Site_print(SiteObject *self, PyObject *Py_UNUSED(ignored))
             printf("\n");
         }
     printf("\n");
-
-    /*
-    printf("Ps:\n");
-    for (state = 0; state < self->__max_states__; state++)
-        if (self->Ps[state] != NULL)
-        {
-            printf("[state %d] ", state);
-            for (i = 0; i < (self->n + 1) * (self->n + 1); i++)
-                printf("%f ", self->Ps[state][i]);
-            printf("\n");
-        }
-    printf("\n");
-    */
     
     Py_RETURN_NONE;
 }
@@ -430,6 +430,7 @@ static PyTypeObject SiteType = {
     .tp_new = Site_new,
     .tp_init = (initproc) Site_init,
     .tp_members = Site_members,
+    .tp_getsetters = Site_getsetters,
     .tp_methods = Site_methods,
     .tp_dealloc = (destructor) Site_dealloc,
 };
@@ -510,10 +511,7 @@ Ligand_getcompartments(LigandObject *self, void *closure)
 static PyObject *
 Ligand_getstates(LigandObject *self, void *closure)
 {
-    int i;
-    PyObject *statesObj = PyList_New(self->n_particles);
-    for (i = 0; i < self->n_particles; i++)
-        PyList_SetItem(statesObj, i, (PyObject *) Py_BuildValue("i", self->states[i]));
+    PyObject *statesObj = Array2PyList_INT(self->states, self->n_particles);
     return Py_NewRef(statesObj);
 }
 
