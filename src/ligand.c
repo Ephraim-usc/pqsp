@@ -734,27 +734,41 @@ System_interact(SystemObject *self, PyObject *args, PyObject *kwds)
     
     SiteObject *siteObj;
     Transition *transition;
-    int st, p, value, value_;
-    int *values;
+    int c, a, s, st, p, value, value_; // index of compartment, analyte, state, site, particle.
+    int *targets, *values;
+    
+    int **deltas = calloc(self->n_compartments, sizeof(int *));
+    for (c = 0; c < self->n_compartments; c++)
+        deltas[c] = calloc(self->n_analytes, sizeof(int));
     
     for (st = 0; st < ligandObj->n_sites; st++)
     {
         siteObj = ligandObj->sites[st];
         transition = Transition_create(self, siteObj, t);
-        values = siteObj->values;
+        targets = siteObj->targets; values = siteObj->values;
         
         for (p = 0; p < siteObj->n_particles; p++)
         {
-            value = values[p];
-            value_ = Transition_apply(transition, compartments[p], states[p], value);
+            c = compartments[p]; s = states[p]; value = values[p];
+            value_ = Transition_apply(transition, c, s, value);
             
             values[p] = value_;
-            //deltas[value] -= 1;
-            //deltas[value_] += 1;
+            if (value_ != value)
+            {
+                deltas[c][targets[value]] -= 1;
+                deltas[c][targets[value_]] += 1;
+            }
         }
-        
         Transition_free(transition);
     }
+
+    for (c = 0; c < self->n_compartments; c++)
+        for (a = 0; a < self->n_analytes; a++)
+            self->xses[c][a] = fmax(0.0, self->xses[c][a] - (double) deltas[c][a] * ligandObj->mpp / self->volumes[c]);
+    
+    for (c = 0; c < self->n_compartments; c++)
+        free(deltas[c]);
+    free(deltas);
     
     Py_RETURN_NONE;
 }
