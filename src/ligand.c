@@ -66,6 +66,7 @@ typedef struct {
     /* fixed attributes */
     int __max_states__;
     int n_compartments; // number of compartments
+    double *volumes; // list of volumes for each compartment
     int n_targets; // number of targets
     
     /* variable attributes */
@@ -622,11 +623,15 @@ System_new(PyTypeObject *type, PyObject *args, PyObject *kwds)
 static int
 System_init(SystemObject *self, PyObject *args, PyObject *kwds)
 {
+    PyObject *volumesObj;
     int c;
     
-    static char *kwlist[] = {"n_compartments", "n_analytes", NULL};
-    if (!PyArg_ParseTupleAndKeywords(args, kwds, "|ii", kwlist, &self->n_compartments, &self->n_analytes))
+    static char *kwlist[] = {"volumes", "n_analytes", NULL};
+    if (!PyArg_ParseTupleAndKeywords(args, kwds, "|O!i", kwlist, &PyList_Type, &volumesObj, &self->n_analytes))
         return -1;
+    
+    self->n_compartments = (int) PyList_Size(volumesObj);
+    self->volumes = PyList2Array_DOUBLE(volumesObj);
     
     self->xses = calloc(self->n_compartments, sizeof(double *));
     for (c = 0; c < self->n_compartments; c++)
@@ -644,6 +649,13 @@ static PyMemberDef System_members[] = {
     {NULL}  /* Sentinel */
 };
 
+
+static PyObject *
+System_getvolumes(SystemObject *self, void *closure)
+{
+    PyObject *volumesObj = Array2PyList_DOUBLE(self->volumes);
+    return Py_NewRef(volumesObj);
+}
 
 static PyObject *
 System_getxses(SystemObject *self, void *closure)
@@ -672,6 +684,7 @@ System_getligands(SystemObject *self, void *closure)
 }
 
 static PyGetSetDef System_getsetters[] = {
+    {"volumes", (getter) System_getvolumes, NULL, "list volumes of each compartment", NULL},
     {"xses", (getter) System_getxses, NULL, "analyte concentrations", NULL},
     {"ligands", (getter) System_getligands, NULL, "ligands", NULL},
     {NULL}  /* Sentinel */
