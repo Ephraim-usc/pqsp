@@ -430,7 +430,7 @@ static PyTypeObject SiteType = {
     .tp_new = Site_new,
     .tp_init = (initproc) Site_init,
     .tp_members = Site_members,
-    .tp_getsetters = Site_getsetters,
+    .tp_getset = Site_getsetters,
     .tp_methods = Site_methods,
     .tp_dealloc = (destructor) Site_dealloc,
 };
