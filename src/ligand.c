@@ -739,13 +739,14 @@ System_interact(SystemObject *self, PyObject *args, PyObject *kwds)
     
     int **deltas = calloc(self->n_compartments, sizeof(int *));
     for (c = 0; c < self->n_compartments; c++)
-        deltas[c] = calloc(self->n_analytes + 1, sizeof(int));
+        deltas[c] = calloc(self->n_analytes, sizeof(int));
     
     for (st = 0; st < ligandObj->n_sites; st++)
     {
         siteObj = ligandObj->sites[st];
         transition = Transition_create(self, siteObj, t);
-        targets = siteObj->targets; values = siteObj->values;
+        targets = siteObj->targets - 1; // for faster mapping from value to target
+        values = siteObj->values;
         
         for (p = 0; p < siteObj->n_particles; p++)
         {
@@ -753,11 +754,8 @@ System_interact(SystemObject *self, PyObject *args, PyObject *kwds)
             value_ = Transition_apply(transition, c, s, value);
             
             values[p] = value_;
-            if (value_ != value)
-            {
-                deltas[c][targets[value]] -= 1;
-                deltas[c][targets[value_]] += 1;
-            }
+            if (value) deltas[c][targets[value]] -= 1;
+            if (value_) deltas[c][targets[value_]] += 1;
         }
         Transition_free(transition);
     }
