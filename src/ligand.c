@@ -746,7 +746,7 @@ System_interact(SystemObject *self, PyObject *args, PyObject *kwds)
     SiteObject *siteObj;
     Transition *transition;
     int st, p, value, value_;
-    double *P, *values;
+    int *values;
     
     for (st = 0; st < ligandObj->n_sites; st++)
     {
@@ -773,7 +773,7 @@ System_interact(SystemObject *self, PyObject *args, PyObject *kwds)
 static PyMethodDef System_methods[] = {
     {"add_x", (PyCFunction) System_add_x, METH_VARARGS | METH_KEYWORDS, "add analyte"},
     {"add_ligand", (PyCFunction) System_add_ligand, METH_VARARGS | METH_KEYWORDS, "add ligand"},
-    {"show_transition", (PyCFunction) System_show_transition, METH_VARARGS | METH_KEYWORDS, "show the transition"},
+    {"interact", (PyCFunction) System_interact, METH_VARARGS | METH_KEYWORDS, "interact with a ligand"},
     {NULL}  /* Sentinel */
 };
 
