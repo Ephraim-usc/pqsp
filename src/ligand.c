@@ -294,14 +294,14 @@ Tree_set(Tree *tree, int len, int *keys, int value)
 }
 
 static int
-Tree_query(Tree *tree, int len, int *keys)
+Tree_search(Tree *tree, int n_particles, int *keys)
 {
-    int i;
-    Node *node = tree->root;
+    int p;
+    Node **searches = tree->searches;
     
-    for (i = 0; i < len; i++)
+    for (p = 0; p < n_particles; p++)
     {
-        if (!node->children)
+        if (searches[p]->children)
             node->children = calloc(tree->n, sizeof(Node *));
         node->children[keys[i]] = Node_new(-1);
         node = node->children[keys[i]];
