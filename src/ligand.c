@@ -562,6 +562,22 @@ Ligand_set_mpp(LigandObject *self, PyObject *args, PyObject *kwds)
 }
 
 static PyObject *
+Ligand_define_states(LigandObject *self, PyObject *args, PyObject *kwds)
+{
+    PyObject *formsObj;
+    PyObject *valuesesObj, *valuesObj;
+    
+    static char *kwlist[] = {"forms", "valueses", "state", NULL};
+    if (!PyArg_ParseTupleAndKeywords(args, kwds, "|O!O!i", kwlist, &PyList_Type, &formsObj, &PyList_Type, &valuesesObj, state))
+        Py_RETURN_NONE;
+    
+    
+    
+    
+    Py_RETURN_NONE;
+}
+
+static PyObject *
 Ligand_add_particles(LigandObject *self, PyObject *args, PyObject *kwds)
 {
     long n;
