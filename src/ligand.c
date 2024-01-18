@@ -498,6 +498,7 @@ Ligand_getsites(LigandObject *self, void *closure)
 static PyObject *
 Ligand_getstatemap(LigandObject *self, void *closure)
 {
+    int st;
     int len_statemap = self->n_forms;
     for (st = 0; st < self->n_sites; st++)
         len_statemap *= self->sites[st]->n_targets + 1;
