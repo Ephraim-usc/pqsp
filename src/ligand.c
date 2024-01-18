@@ -14,7 +14,7 @@
 ******************************************************************************/
 
 static int *
-PyList2Array_INT(PyObject *listObj)
+PyList2Array_INT(PyObject *listObj) # have to switch from int to long for security!!!
 {
     int len, i;
     len = (int) PyList_Size(listObj);
@@ -94,11 +94,13 @@ typedef struct {
     /* fixed attributes */
     int n_sites;
     SiteObject **sites;
+    int *statemap;
     
     /* variable attributes */
     double mpp; // mole per particle
     long n_particles;
     int *compartments; // list of compartments for each particle
+    int *forms; // list of forms for each particle
     int *states; // list of states for each particle
 } LigandObject;
 
@@ -515,6 +517,7 @@ Ligand_new(PyTypeObject *type, PyObject *args, PyObject *kwds)
         self->n_particles = 0;
         self->mpp = 0.0;
         self->compartments = NULL;
+        self->forms = NULL;
         self->states = NULL;
     }
     return (PyObject *) self;
@@ -563,6 +566,13 @@ Ligand_getcompartments(LigandObject *self, void *closure)
 }
 
 static PyObject *
+Ligand_getforms(LigandObject *self, void *closure)
+{
+    PyObject *formsObj = Array2PyList_INT(self->forms, self->n_particles);
+    return Py_NewRef(formsObj);
+}
+
+static PyObject *
 Ligand_getstates(LigandObject *self, void *closure)
 {
     PyObject *statesObj = Array2PyList_INT(self->states, self->n_particles);
@@ -572,6 +582,7 @@ Ligand_getstates(LigandObject *self, void *closure)
 static PyGetSetDef Ligand_getsetters[] = {
     {"sites", (getter) Ligand_getsites, NULL, "binding sites", NULL},
     {"compartments", (getter) Ligand_getcompartments, NULL, "list of compartments for each particle", NULL},
+    {"forms", (getter) Ligand_getforms, NULL, "list of forms for each particle", NULL},
     {"states", (getter) Ligand_getstates, NULL, "list of states, for each particle", NULL},
     {NULL}  /* Sentinel */
 };
@@ -590,15 +601,17 @@ static PyObject *
 Ligand_add_particles(LigandObject *self, PyObject *args, PyObject *kwds)
 {
     long n;
+    int compartment, form;
     int p, st;
     long n_particles_old;
     int *compartments_old;
+    int *forms_old;
     int *states_old;
     
-    static char *kwlist[] = {"n", NULL};
-    if (!PyArg_ParseTupleAndKeywords(args, kwds, "|l", kwlist, &n))
+    static char *kwlist[] = {"n", "compartment", "form", NULL};
+    if (!PyArg_ParseTupleAndKeywords(args, kwds, "|lii", kwlist, &n, &compartment, &form))
         Py_RETURN_NONE;
-
+    
     n_particles_old = self->n_particles;
     compartments_old = self->compartments;
     states_old = self->states;
@@ -608,7 +621,16 @@ Ligand_add_particles(LigandObject *self, PyObject *args, PyObject *kwds)
     self->compartments = calloc(self->n_particles, sizeof(int));
     for(p = 0; p < n_particles_old; p++)
         self->compartments[p] = compartments_old[p];
+    for(p = n_particles_old; p < self->n_particles; p++)
+        self->compartments[p] = compartment;
     free(compartments_old);
+    
+    self->forms = calloc(self->n_particles, sizeof(int));
+    for(p = 0; p < n_particles_old; p++)
+        self->forms[p] = forms_old[p];
+    for(p = n_particles_old; p < self->n_particles; p++)
+        self->forms[p] = form;
+    free(forms_old);
     
     self->states = calloc(self->n_particles, sizeof(int));
     for(p = 0; p < n_particles_old; p++)
