@@ -94,6 +94,9 @@ typedef struct {
     /* fixed attributes */
     int n_sites;
     SiteObject **sites;
+    int n_forms;
+    
+    /* state map */
     int *statemap;
     
     /* variable attributes */
@@ -439,6 +442,8 @@ Ligand_new(PyTypeObject *type, PyObject *args, PyObject *kwds)
         self->n_sites = 0;
         self->sites = NULL;
         
+        self->statemap = NULL;
+        
         self->n_particles = 0;
         self->mpp = 0.0;
         self->compartments = NULL;
@@ -452,22 +457,29 @@ static int
 Ligand_init(LigandObject *self, PyObject *args, PyObject *kwds)
 {
     PyObject *sitesObj;
-    int s;
+    int st;
+    int len_statemap;
     
-    static char *kwlist[] = {"sites", NULL};
-    if (!PyArg_ParseTupleAndKeywords(args, kwds, "|O!", kwlist, &PyList_Type, &sitesObj))
+    static char *kwlist[] = {"sites", "n_forms", NULL};
+    if (!PyArg_ParseTupleAndKeywords(args, kwds, "|O!", kwlist, &PyList_Type, &sitesObj, &self->n_forms))
         return -1;
     
     self->n_sites = (int) PyList_Size(sitesObj);
     self->sites = calloc(self->n_sites, sizeof(SiteObject *));
-    for(s = 0; s < self->n_sites; s++)
-      self->sites[s] = (SiteObject *) PyList_GetItem(sitesObj, s);
+    for(st = 0; st < self->n_sites; st++)
+        self->sites[st] = (SiteObject *) PyList_GetItem(sitesObj, st);
+    
+    len_statemap = self->n_forms;
+    for (st = 0; st < self->n_sites; st++)
+        len_statemap *= self->sites[st]->n_targets + 1;
+    self->statemap = calloc(len_statemap, sizeof(int));
     
     return 0;
 }
 
 static PyMemberDef Ligand_members[] = {
     {"n_sites", T_INT, offsetof(LigandObject, n_sites), READONLY, "number of binding sites"},
+    {"n_forms", T_INT, offsetof(LigandObject, n_forms), READONLY, "number of forms"},
     {"mpp", T_DOUBLE, offsetof(LigandObject, mpp), READONLY, "mole per particle"},
     {"n_particles", T_LONG, offsetof(LigandObject, n_particles), READONLY, "number of particles"},
     {NULL}  /* Sentinel */
@@ -481,6 +493,17 @@ Ligand_getsites(LigandObject *self, void *closure)
     for (s = 0; s < self->n_sites; s++)
         PyList_SetItem(sitesObj, s, (PyObject *) self->sites[s]);
     return Py_NewRef(sitesObj);
+}
+
+static PyObject *
+Ligand_getstatemap(LigandObject *self, void *closure)
+{
+    int len_statemap = self->n_forms;
+    for (st = 0; st < self->n_sites; st++)
+        len_statemap *= self->sites[st]->n_targets + 1;
+    
+    PyObject *statemapObj = Array2PyList_INT(self->statemap, len_statemap);
+    return Py_NewRef(statemapObj);
 }
 
 static PyObject *
@@ -506,11 +529,26 @@ Ligand_getstates(LigandObject *self, void *closure)
 
 static PyGetSetDef Ligand_getsetters[] = {
     {"sites", (getter) Ligand_getsites, NULL, "binding sites", NULL},
+    {"statemap", (getter) Ligand_getstatemap, NULL, "state map", NULL},
     {"compartments", (getter) Ligand_getcompartments, NULL, "list of compartments for each particle", NULL},
     {"forms", (getter) Ligand_getforms, NULL, "list of forms for each particle", NULL},
     {"states", (getter) Ligand_getstates, NULL, "list of states, for each particle", NULL},
     {NULL}  /* Sentinel */
 };
+
+/*
+static PyObject *
+Ligand_update_states(LigandObject *self, PyObject *Py_UNUSED(ignored))
+{
+    long p;
+    for(p = 0; p < self->n_particles; p++)
+    {
+        
+    }
+    
+    Py_RETURN_NONE;
+}
+*/
 
 static PyObject *
 Ligand_set_mpp(LigandObject *self, PyObject *args, PyObject *kwds)
@@ -527,7 +565,7 @@ Ligand_add_particles(LigandObject *self, PyObject *args, PyObject *kwds)
 {
     long n;
     int compartment, form;
-    int p, st;
+    long p; int st;
     long n_particles_old;
     int *compartments_old;
     int *forms_old;
