@@ -539,6 +539,7 @@ Ligand_add_particles(LigandObject *self, PyObject *args, PyObject *kwds)
     
     n_particles_old = self->n_particles;
     compartments_old = self->compartments;
+    forms_old = self->forms;
     states_old = self->states;
     
     self->n_particles += n;
