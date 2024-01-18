@@ -14,7 +14,7 @@
 ******************************************************************************/
 
 static int *
-PyList2Array_INT(PyObject *listObj) # have to switch from int to long for security!!!
+PyList2Array_INT(PyObject *listObj) // have to switch from int to long for security!!!
 {
     int len, i;
     len = (int) PyList_Size(listObj);
