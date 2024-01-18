@@ -461,7 +461,7 @@ Ligand_init(LigandObject *self, PyObject *args, PyObject *kwds)
     int len_statemap;
     
     static char *kwlist[] = {"sites", "n_forms", NULL};
-    if (!PyArg_ParseTupleAndKeywords(args, kwds, "|O!", kwlist, &PyList_Type, &sitesObj, &self->n_forms))
+    if (!PyArg_ParseTupleAndKeywords(args, kwds, "|O!i", kwlist, &PyList_Type, &sitesObj, &self->n_forms))
         return -1;
     
     self->n_sites = (int) PyList_Size(sitesObj);
