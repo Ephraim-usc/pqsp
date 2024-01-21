@@ -13,6 +13,24 @@
                           utility functions
 ******************************************************************************/
 
+//  Increment the counters, lexicographic (dictionary/odometer) style.
+static int increment_counters(int n_dims, int *dims, int *counters)
+{
+    int i;
+    for (i = n_dims - 1; i > 0; i--)
+    {
+        if (++counters[i] < dims[i])
+            return 1;
+        else
+            counters[i] = 0;
+    }
+    
+    if (++counters[0] < dims[0])
+        return 1;
+    else
+        return 0;
+}
+
 static int *
 PyList2Array_INT(PyObject *listObj) // have to switch from int to long for security!!!
 {
@@ -566,13 +584,38 @@ Ligand_define_states(LigandObject *self, PyObject *args, PyObject *kwds)
 {
     PyObject *formsObj;
     PyObject *valuesesObj, *valuesObj;
+    int st, s;
+    int **valueses, *dims, *counters;
+    int n_dims;
     
     static char *kwlist[] = {"forms", "valueses", "state", NULL};
-    if (!PyArg_ParseTupleAndKeywords(args, kwds, "|O!O!i", kwlist, &PyList_Type, &formsObj, &PyList_Type, &valuesesObj, state))
+    if (!PyArg_ParseTupleAndKeywords(args, kwds, "|O!O!i", kwlist, &PyList_Type, &formsObj, &PyList_Type, &valuesesObj, &s))
         Py_RETURN_NONE;
     
+    n_dims = 1 + self->n_sites;
     
+    *dims = calloc(1 + self->n_sites, sizeof(int));
+    dims[0] = self->n_forms;
+    for (st = 0; st < self->n_sites; st++)
+        dims[st + 1] = self->sites[st]->n_targets + 1;
     
+    valueses = (int **)calloc(1 + self->n_sites, sizeof(int *));
+    valueses[0] =  = PyList2Array_INT(formsObj);
+    for (st = 0; st < self->n_sites; st++)
+        valueses[st + 1] = PyList2Array_INT(PyList_GetItem(valuesesObj, st));
+    
+    counters = (int *)calloc(n_dims, sizeof(int));
+    do
+    {
+        idx = valueses[0][counters[0]];
+        for (i = 1; i < n_dims; i++)
+        {
+            idx *= dims[i];
+            idx += valueses[i][counters[i]];
+        }
+        self->statemap[idx] = s;
+    }
+    while (increment_counters(n_dims, dims, counters));
     
     Py_RETURN_NONE;
 }
