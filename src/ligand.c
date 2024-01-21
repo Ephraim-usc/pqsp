@@ -580,7 +580,7 @@ Ligand_set_mpp(LigandObject *self, PyObject *args, PyObject *kwds)
 }
 
 static PyObject *
-Ligand_define_states(LigandObject *self, PyObject *args, PyObject *kwds)
+Ligand_define_state(LigandObject *self, PyObject *args, PyObject *kwds)
 {
     PyObject *formsObj;
     PyObject *valuesesObj, *valuesObj;
@@ -670,6 +670,7 @@ Ligand_add_particles(LigandObject *self, PyObject *args, PyObject *kwds)
 static PyMethodDef Ligand_methods[] = {
     {"set_mpp", (PyCFunction) Ligand_set_mpp, METH_VARARGS | METH_KEYWORDS, "set the mpp value of the ligand"},
     {"add_particles", (PyCFunction) Ligand_add_particles, METH_VARARGS | METH_KEYWORDS, "add particles of the ligand"},
+    {"define_state", (PyCFunction) Ligand_add_particles, METH_VARARGS | METH_KEYWORDS, "define state"},
     {NULL}  /* Sentinel */
 };
 
