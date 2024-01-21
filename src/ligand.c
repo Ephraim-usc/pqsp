@@ -584,7 +584,7 @@ Ligand_define_states(LigandObject *self, PyObject *args, PyObject *kwds)
 {
     PyObject *formsObj;
     PyObject *valuesesObj, *valuesObj;
-    int st, s;
+    int st, s, i, idx;
     int **valueses, *dims, *counters;
     int n_dims;
     
@@ -594,13 +594,13 @@ Ligand_define_states(LigandObject *self, PyObject *args, PyObject *kwds)
     
     n_dims = 1 + self->n_sites;
     
-    *dims = calloc(1 + self->n_sites, sizeof(int));
+    dims = calloc(1 + self->n_sites, sizeof(int));
     dims[0] = self->n_forms;
     for (st = 0; st < self->n_sites; st++)
         dims[st + 1] = self->sites[st]->n_targets + 1;
     
     valueses = (int **)calloc(1 + self->n_sites, sizeof(int *));
-    valueses[0] =  = PyList2Array_INT(formsObj);
+    valueses[0] = PyList2Array_INT(formsObj);
     for (st = 0; st < self->n_sites; st++)
         valueses[st + 1] = PyList2Array_INT(PyList_GetItem(valuesesObj, st));
     
