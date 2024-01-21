@@ -612,12 +612,6 @@ Ligand_define_state(LigandObject *self, PyObject *args, PyObject *kwds)
     counters = (int *)calloc(n_dims, sizeof(int));
     do
     {
-        for (i = 0; i < n_dims; i++)
-        {
-            printf("%d ", valueses[i][counters[i]]);
-        }
-        printf("\n");
-        
         idx = valueses[0][counters[0]];
         for (i = 1; i < n_dims; i++)
         {
