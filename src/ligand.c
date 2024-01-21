@@ -585,7 +585,7 @@ Ligand_define_state(LigandObject *self, PyObject *args, PyObject *kwds)
     PyObject *formsObj;
     PyObject *valuesesObj, *valuesObj;
     int st, s, i, idx;
-    int **valueses, *dims, *counters;
+    int **valueses, *dims_map, *dims_input, *counters;
     int n_dims;
     
     static char *kwlist[] = {"forms", "valueses", "state", NULL};
