@@ -593,11 +593,16 @@ Ligand_define_state(LigandObject *self, PyObject *args, PyObject *kwds)
         Py_RETURN_NONE;
     
     n_dims = 1 + self->n_sites;
-    
-    dims = calloc(1 + self->n_sites, sizeof(int));
-    dims[0] = (int) PyList_Size(formsObj);
+
+    dims_map = calloc(1 + self->n_sites, sizeof(int));
+    dims_map[0] = self->n_forms;
     for (st = 0; st < self->n_sites; st++)
-        dims[st + 1] = (int) PyList_Size(PyList_GetItem(valuesesObj, st));
+        dims_map[st + 1] = self->sites[st]->n_targets;
+    
+    dims_input = calloc(1 + self->n_sites, sizeof(int));
+    dims_input[0] = (int) PyList_Size(formsObj);
+    for (st = 0; st < self->n_sites; st++)
+        dims_input[st + 1] = (int) PyList_Size(PyList_GetItem(valuesesObj, st));
     
     valueses = (int **)calloc(1 + self->n_sites, sizeof(int *));
     valueses[0] = PyList2Array_INT(formsObj);
@@ -616,12 +621,12 @@ Ligand_define_state(LigandObject *self, PyObject *args, PyObject *kwds)
         idx = valueses[0][counters[0]];
         for (i = 1; i < n_dims; i++)
         {
-            idx *= dims[i];
+            idx *= dims_map[i];
             idx += valueses[i][counters[i]];
         }
         self->statemap[idx] = s;
     }
-    while (increment_counters(n_dims, dims, counters));
+    while (increment_counters(n_dims, dims_input, counters));
     
     Py_RETURN_NONE;
 }
