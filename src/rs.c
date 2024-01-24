@@ -912,15 +912,15 @@ static PyTypeObject SystemType = {
                                 the module
 ******************************************************************************/
 
-static PyModuleDef ligandmodule = {
+static PyModuleDef rsmodule = {
     .m_base = PyModuleDef_HEAD_INIT,
-    .m_name = "ligand",
+    .m_name = "rs",
     .m_doc = "Example module that creates an extension type.",
     .m_size = -1,
 };
 
 PyMODINIT_FUNC
-PyInit_ligand(void)
+PyInit_rs(void)
 {
     PyObject *m;
     if (PyType_Ready(&SiteType) < 0)
@@ -929,8 +929,8 @@ PyInit_ligand(void)
         return NULL;
     if (PyType_Ready(&SystemType) < 0)
         return NULL;
-
-    m = PyModule_Create(&ligandmodule);
+    
+    m = PyModule_Create(&rsmodule);
     if (m == NULL)
         return NULL;
     
@@ -947,7 +947,7 @@ PyInit_ligand(void)
         Py_DECREF(m);
         return NULL;
     }
-
+    
     Py_INCREF(&SystemType);
     if (PyModule_AddObject(m, "System", (PyObject *) &SystemType) < 0) {
         Py_DECREF(&SystemType);
