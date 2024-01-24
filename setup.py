@@ -30,7 +30,7 @@ setup(
     ],
     scripts=[],
     ext_modules=[
-        Extension("ligand", ["src/ligand.c", "src/expm.c", "src/r8lib.c"], include_dirs=[np.get_include()]),
+        Extension("rs", ["src/rs.c", "src/expm.c", "src/r8lib.c"], include_dirs=[np.get_include()]),
     ],
     classifiers=[
         "Programming Language :: Python :: 3.7",
