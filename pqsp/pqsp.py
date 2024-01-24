@@ -6,6 +6,6 @@ import pandas as pd
 
 
 ### import C extension
-import ligand
+import rs
 
 
